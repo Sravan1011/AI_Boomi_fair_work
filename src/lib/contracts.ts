@@ -94,6 +94,13 @@ export const ESCROW_ABI = [
         type: "function",
     },
     {
+        inputs: [{ name: "_jobId", type: "uint256" }],
+        name: "cancelJob",
+        outputs: [],
+        stateMutability: "nonpayable",
+        type: "function",
+    },
+    {
         inputs: [
             { name: "_jobId", type: "uint256" },
             { name: "_evidenceHash", type: "string" },
@@ -148,6 +155,16 @@ export const ESCROW_ABI = [
         anonymous: false,
         inputs: [{ indexed: true, name: "jobId", type: "uint256" }],
         name: "JobApproved",
+        type: "event",
+    },
+    {
+        anonymous: false,
+        inputs: [
+            { indexed: true, name: "jobId", type: "uint256" },
+            { indexed: true, name: "client", type: "address" },
+            { indexed: false, name: "refundAmount", type: "uint256" },
+        ],
+        name: "JobCancelled",
         type: "event",
     },
     {

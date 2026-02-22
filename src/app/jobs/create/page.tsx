@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { parseUnits } from "viem";
+import { parseUnits, decodeEventLog } from "viem";
 import Navbar from "@/components/layout/Navbar";
 import { ESCROW_ABI, USDC_ABI } from "@/lib/contracts";
 import { ESCROW_CONTRACT_ADDRESS, USDC_CONTRACT_ADDRESS } from "@/lib/wagmi";
@@ -18,7 +18,6 @@ export default function CreateJobPage() {
     const router = useRouter();
     const { address, isConnected } = useAccount();
     const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
-    const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
 
     const [formData, setFormData] = useState({
         title: "",
@@ -29,6 +28,81 @@ export default function CreateJobPage() {
 
     const [isUploading, setIsUploading] = useState(false);
     const [step, setStep] = useState<"form" | "approving" | "creating">("form");
+    const [jobTxHash, setJobTxHash] = useState<`0x${string}` | undefined>();
+    const [ipfsHashForJob, setIpfsHashForJob] = useState<string>("");
+
+    // Wait for job creation transaction
+    const { data: receipt, isLoading: isConfirming } = useWaitForTransactionReceipt({
+        hash: jobTxHash,
+    });
+
+    // When transaction is confirmed, parse the event and save to database
+    useEffect(() => {
+        const saveJobToDatabase = async () => {
+            if (!receipt || !address || !ipfsHashForJob) return;
+
+            try {
+                // Find the JobCreated event in the logs
+                const jobCreatedLog = receipt.logs.find((log) => {
+                    try {
+                        const decoded = decodeEventLog({
+                            abi: ESCROW_ABI,
+                            data: log.data,
+                            topics: log.topics,
+                        });
+                        return decoded.eventName === 'JobCreated';
+                    } catch {
+                        return false;
+                    }
+                });
+
+                if (!jobCreatedLog) {
+                    console.error("JobCreated event not found in transaction logs");
+                    alert("Job created on blockchain but couldn't find event. Please refresh the page.");
+                    return;
+                }
+
+                // Decode the event to get the jobId
+                const decodedEvent = decodeEventLog({
+                    abi: ESCROW_ABI,
+                    data: jobCreatedLog.data,
+                    topics: jobCreatedLog.topics,
+                });
+
+                const jobId = (decodedEvent.args as any).jobId as bigint;
+
+                console.log("✅ Real Job ID from event:", jobId.toString());
+
+                // Save to Supabase with the REAL job ID
+                const { error } = await supabase.from("jobs").insert({
+                    contract_job_id: Number(jobId),
+                    title: formData.title,
+                    description: formData.description,
+                    description_ipfs: ipfsHashForJob,
+                    amount: Number(parseUnits(formData.amount, 6)),
+                    deadline: Math.floor(new Date(formData.deadline).getTime() / 1000),
+                    client: address,
+                    status: "OPEN",
+                });
+
+                if (error) {
+                    console.error("Database insert error:", error);
+                    alert(`Job created on blockchain but database save failed: ${error.message}`);
+                } else {
+                    console.log("✅ Job saved to database successfully!");
+                    alert("✅ Job created successfully!");
+                    setTimeout(() => {
+                        router.push("/jobs");
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error("Error saving job to database:", error);
+                alert("Job created on blockchain but failed to save to database. Please contact support.");
+            }
+        };
+
+        saveJobToDatabase();
+    }, [receipt, address, ipfsHashForJob, formData, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -101,30 +175,29 @@ export default function CreateJobPage() {
     const createJob = (amountInWei: bigint, ipfsHash: string) => {
         const deadlineTimestamp = Math.floor(new Date(formData.deadline).getTime() / 1000);
 
+        // Store IPFS hash for later use in useEffect
+        setIpfsHashForJob(ipfsHash);
+
         writeContract({
             address: ESCROW_CONTRACT_ADDRESS,
             abi: ESCROW_ABI,
             functionName: "createJob",
             args: [amountInWei, BigInt(deadlineTimestamp), ipfsHash],
         }, {
-            onSuccess: async (data) => {
-                console.log("Job created on-chain:", data);
+            onSuccess: (txHash) => {
+                console.log("✅ Job creation transaction sent:", txHash);
+                console.log("⏳ Waiting for confirmation...");
 
-                await supabase.from("jobs").insert({
-                    contract_job_id: 0,
-                    title: formData.title,
-                    description: formData.description,
-                    description_ipfs: ipfsHash,
-                    amount: Number(amountInWei),
-                    deadline: Math.floor(new Date(formData.deadline).getTime() / 1000),
-                    client: address,
-                    status: "OPEN",
-                });
+                // Store the transaction hash to trigger receipt watching
+                setJobTxHash(txHash);
 
-                setTimeout(() => {
-                    router.push("/jobs");
-                }, 2000);
+                // Note: Database save happens in useEffect after receipt is confirmed
             },
+            onError: (error) => {
+                console.error("❌ Transaction failed:", error);
+                alert(`Failed to create job: ${error.message}`);
+                setStep("form");
+            }
         });
     };
 

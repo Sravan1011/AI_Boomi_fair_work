@@ -50,6 +50,9 @@ export default function JobsPage() {
             query = query.eq("status", "OPEN");
         } else if (filter === "active") {
             query = query.in("status", ["ACCEPTED", "SUBMITTED"]);
+        } else {
+            // For "all" filter, exclude CANCELLED and RESOLVED jobs
+            query = query.not("status", "in", '("CANCELLED","RESOLVED")');
         }
 
         const { data, error } = await query;

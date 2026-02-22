@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -12,6 +13,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @dev Handles job creation, deliverable submission, disputes, and fund distribution
  */
 contract FairWorkEscrow is ReentrancyGuard, Pausable, Ownable {
+    using SafeERC20 for IERC20;
+
     IERC20 public immutable usdc;
     
     uint256 public jobCounter;
@@ -25,7 +28,8 @@ contract FairWorkEscrow is ReentrancyGuard, Pausable, Ownable {
         SUBMITTED,
         APPROVED,
         DISPUTED,
-        RESOLVED
+        RESOLVED,
+        CANCELLED
     }
     
     enum DisputeStatus {
@@ -77,7 +81,8 @@ contract FairWorkEscrow is ReentrancyGuard, Pausable, Ownable {
     event VoteCast(uint256 indexed disputeId, address indexed juror, bool votedForClient);
     event DisputeResolved(uint256 indexed disputeId, address indexed winner);
     event FundsReleased(uint256 indexed jobId, address indexed recipient, uint256 amount);
-    
+    event JobCancelled(uint256 indexed jobId, address indexed client, uint256 refundAmount);
+
     constructor(address _usdc) Ownable(msg.sender) {
         usdc = IERC20(_usdc);
     }
@@ -97,11 +102,8 @@ contract FairWorkEscrow is ReentrancyGuard, Pausable, Ownable {
         require(_deadline > block.timestamp, "Deadline must be in future");
         require(bytes(_descriptionHash).length > 0, "Description hash required");
         
-        // Transfer USDC to escrow
-        require(
-            usdc.transferFrom(msg.sender, address(this), _amount),
-            "USDC transfer failed"
-        );
+        // Transfer USDC to escrow (SafeERC20 handles non-standard tokens)
+        usdc.safeTransferFrom(msg.sender, address(this), _amount);
         
         uint256 jobId = jobCounter++;
         
@@ -172,14 +174,40 @@ contract FairWorkEscrow is ReentrancyGuard, Pausable, Ownable {
         uint256 platformFee = (job.amount * PLATFORM_FEE_BPS) / 10000;
         uint256 freelancerPayment = job.amount - platformFee;
         
-        // Release funds
-        require(usdc.transfer(job.freelancer, freelancerPayment), "Freelancer payment failed");
-        require(usdc.transfer(owner(), platformFee), "Platform fee transfer failed");
+        // Release funds (SafeERC20 handles non-standard tokens)
+        usdc.safeTransfer(job.freelancer, freelancerPayment);
+        usdc.safeTransfer(owner(), platformFee);
         
         emit JobApproved(_jobId);
         emit FundsReleased(_jobId, job.freelancer, freelancerPayment);
     }
-    
+
+    /**
+     * @notice Client cancels job and receives full refund
+     * @param _jobId Job ID to cancel
+     */
+    function cancelJob(uint256 _jobId) external nonReentrant whenNotPaused {
+        Job storage job = jobs[_jobId];
+
+        // Only client can cancel their own job
+        require(job.client == msg.sender, "Only client can cancel");
+
+        // Can only cancel jobs that haven't been accepted yet
+        require(job.status == JobStatus.OPEN, "Can only cancel open jobs");
+
+        // Update job status
+        job.status = JobStatus.CANCELLED;
+
+        // Full refund to client (100% - no cancellation fee for now)
+        uint256 refundAmount = job.amount;
+
+        // Transfer refund back to client (SafeERC20 handles non-standard tokens)
+        usdc.safeTransfer(job.client, refundAmount);
+
+        emit JobCancelled(_jobId, msg.sender, refundAmount);
+        emit FundsReleased(_jobId, msg.sender, refundAmount);
+    }
+
     /**
      * @notice Raise a dispute on a submitted job
      * @param _jobId Job ID to dispute
@@ -271,9 +299,9 @@ contract FairWorkEscrow is ReentrancyGuard, Pausable, Ownable {
         uint256 platformFee = (job.amount * PLATFORM_FEE_BPS) / 10000;
         uint256 winnerPayment = job.amount - platformFee;
         
-        // Release funds to winner
-        require(usdc.transfer(winner, winnerPayment), "Winner payment failed");
-        require(usdc.transfer(owner(), platformFee), "Platform fee transfer failed");
+        // Release funds to winner (SafeERC20 handles non-standard tokens)
+        usdc.safeTransfer(winner, winnerPayment);
+        usdc.safeTransfer(owner(), platformFee);
         
         emit DisputeResolved(_disputeId, winner);
         emit FundsReleased(dispute.jobId, winner, winnerPayment);
@@ -295,19 +323,36 @@ contract FairWorkEscrow is ReentrancyGuard, Pausable, Ownable {
      */
     function _selectJurors() internal view returns (address[] memory) {
         require(juryPool.length >= JUROR_COUNT, "Not enough jurors in pool");
-        
+
         address[] memory selected = new address[](JUROR_COUNT);
         uint256 poolSize = juryPool.length;
-        
+        uint256 selectedCount = 0;
+
         // Simplified random selection (NOT secure for production)
         // In production, use Chainlink VRF
         uint256 seed = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao)));
-        
-        for (uint256 i = 0; i < JUROR_COUNT; i++) {
-            uint256 index = uint256(keccak256(abi.encodePacked(seed, i))) % poolSize;
-            selected[i] = juryPool[index];
+        uint256 nonce = 0;
+
+        while (selectedCount < JUROR_COUNT) {
+            uint256 index = uint256(keccak256(abi.encodePacked(seed, nonce))) % poolSize;
+            address candidate = juryPool[index];
+            nonce++;
+
+            // Check for duplicates
+            bool isDuplicate = false;
+            for (uint256 j = 0; j < selectedCount; j++) {
+                if (selected[j] == candidate) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+
+            if (!isDuplicate) {
+                selected[selectedCount] = candidate;
+                selectedCount++;
+            }
         }
-        
+
         return selected;
     }
     
@@ -340,7 +385,26 @@ contract FairWorkEscrow is ReentrancyGuard, Pausable, Ownable {
     function unpause() external onlyOwner {
         _unpause();
     }
-    
+
+    /**
+     * @notice Emergency withdrawal function - only for recovering stuck funds
+     * @dev Only owner can call this. Use with extreme caution.
+     * @param _recipient Address to send the funds to
+     * @param _amount Amount of USDC to withdraw (in USDC decimals - 6)
+     */
+    function emergencyWithdraw(address _recipient, uint256 _amount) external onlyOwner {
+        require(_recipient != address(0), "Invalid recipient");
+        require(_amount > 0, "Amount must be > 0");
+
+        uint256 contractBalance = usdc.balanceOf(address(this));
+        require(_amount <= contractBalance, "Insufficient contract balance");
+
+        // SafeERC20 handles non-standard tokens
+        usdc.safeTransfer(_recipient, _amount);
+
+        emit FundsReleased(0, _recipient, _amount);
+    }
+
     /**
      * @notice Get job details
      * @param _jobId Job ID
