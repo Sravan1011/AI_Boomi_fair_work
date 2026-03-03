@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,13 +26,28 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface Job {
+    id: string;
+    contract_job_id: number;
+    title: string;
+    description: string;
+    amount: number;
+    deadline: number;
+    client: string;
+    freelancer?: string;
+    status: string;
+    created_at: string;
+    description_ipfs?: string;
+    deliverable_ipfs?: string;
+}
+
 export default function JobDetailsPage() {
     const params = useParams();
     const router = useRouter();
     const { address, isConnected } = useAccount();
-    const { writeContract, isPending, data: hash } = useWriteContract();
+    const { writeContract, isPending } = useWriteContract();
 
-    const [job, setJob] = useState<any>(null);
+    const [job, setJob] = useState<Job | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [deliverableFile, setDeliverableFile] = useState<File | null>(null);
     const [disputeReason, setDisputeReason] = useState("");
@@ -44,14 +59,34 @@ export default function JobDetailsPage() {
     const [pendingAction, setPendingAction] = useState<string | null>(null);
 
     // Wait for ANY transaction confirmation
-    const { data: txReceipt, isLoading: isConfirming } = useWaitForTransactionReceipt({
+    const { data: txReceipt } = useWaitForTransactionReceipt({
         hash: pendingTxHash,
     });
+
+    const fetchJob = async () => {
+        const { data, error } = await supabase
+            .from("jobs")
+            .select("*")
+            .eq("id", params.id)
+            .single();
+
+        if (error) {
+            console.error("Error fetching job:", error);
+        } else {
+            setJob(data);
+        }
+        setIsLoading(false);
+    };
+
+    useEffect(() => {
+        fetchJob();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [params.id]);
 
     // Handle transaction confirmation for ALL actions
     useEffect(() => {
         const handleTxConfirmation = async () => {
-            if (!txReceipt || !pendingAction) return;
+            if (!txReceipt || !pendingAction || !job) return;
 
             console.log(`📝 [${pendingAction}] Transaction receipt:`, txReceipt);
 
@@ -104,26 +139,8 @@ export default function JobDetailsPage() {
         };
 
         handleTxConfirmation();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [txReceipt]);
-
-    useEffect(() => {
-        fetchJob();
-    }, [params.id]);
-
-    const fetchJob = async () => {
-        const { data, error } = await supabase
-            .from("jobs")
-            .select("*")
-            .eq("id", params.id)
-            .single();
-
-        if (error) {
-            console.error("Error fetching job:", error);
-        } else {
-            setJob(data);
-        }
-        setIsLoading(false);
-    };
 
     const handleAcceptJob = () => {
         if (!job) return;
@@ -139,7 +156,7 @@ export default function JobDetailsPage() {
                 setPendingTxHash(txHash);
                 setPendingAction("accept");
             },
-            onError: (error: any) => {
+            onError: (error: Error) => {
                 console.error("❌ Accept job error:", error);
                 alert(`❌ Failed to accept job: ${error.message}`);
             },
@@ -178,7 +195,7 @@ export default function JobDetailsPage() {
                     setPendingTxHash(txHash);
                     setPendingAction("submit");
                 },
-                onError: (error: any) => {
+                onError: (error: Error) => {
                     console.error("❌ Submit deliverable error:", error);
                     alert(`❌ Failed to submit deliverable: ${error.message}`);
                 },
@@ -203,7 +220,7 @@ export default function JobDetailsPage() {
                 setPendingTxHash(txHash);
                 setPendingAction("approve");
             },
-            onError: (error: any) => {
+            onError: (error: Error) => {
                 console.error("❌ Approve job error:", error);
                 alert(`❌ Failed to approve job: ${error.message}`);
             },
@@ -246,7 +263,7 @@ export default function JobDetailsPage() {
                     setPendingTxHash(txHash);
                     setPendingAction("dispute");
                 },
-                onError: (error: any) => {
+                onError: (error: Error) => {
                     console.error("❌ Raise dispute error:", error);
                     alert(`❌ Failed to raise dispute: ${error.message}`);
                 },
@@ -288,7 +305,7 @@ export default function JobDetailsPage() {
                     setPendingTxHash(txHash);
                     setPendingAction("cancel");
                 },
-                onError: (error: any) => {
+                onError: (error: Error) => {
                     console.error("❌ Cancellation error:", error);
 
                     let errorMessage = error.message || "Unknown error";
@@ -306,16 +323,16 @@ export default function JobDetailsPage() {
                     setIsCancelling(false);
                 }
             });
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error cancelling job:", error);
-            alert(`Failed to cancel job: ${error.message || "Unknown error"}`);
+            alert(`Failed to cancel job: ${error instanceof Error ? error.message : "Unknown error"}`);
             setIsCancelling(false);
         }
     };
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+            <div className="min-h-screen bg-[#050505]">
                 <Navbar />
                 <div className="flex items-center justify-center py-20">
                     <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
@@ -326,10 +343,10 @@ export default function JobDetailsPage() {
 
     if (!job) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+            <div className="min-h-screen bg-[#050505]">
                 <Navbar />
                 <div className="container mx-auto px-6 py-12 text-center">
-                    <p className="text-slate-600 dark:text-slate-400">Job not found</p>
+                    <p className="text-[#8888a0]">Job not found</p>
                 </div>
             </div>
         );
@@ -344,7 +361,7 @@ export default function JobDetailsPage() {
     const canCancel = job.status === "OPEN" && isClient && isConnected;
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="min-h-screen bg-[#050505]">
             <Navbar />
 
             <div className="container mx-auto px-6 py-12">
@@ -355,7 +372,7 @@ export default function JobDetailsPage() {
                             <div className="flex items-start justify-between">
                                 <div>
                                     <CardTitle className="text-2xl mb-2">{job.title}</CardTitle>
-                                    <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
+                                    <div className="flex items-center gap-3 text-sm text-[#8888a0]">
                                         <span>Client: {formatAddress(job.client)}</span>
                                         {job.freelancer && (
                                             <span>• Freelancer: {formatAddress(job.freelancer)}</span>
@@ -374,20 +391,20 @@ export default function JobDetailsPage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Description</h3>
+                                <h3 className="font-semibold text-[#f0f0f5] mb-2">Description</h3>
                                 <p className="text-slate-700 dark:text-slate-300">{job.description}</p>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#1a1a24]">
                                 <div>
-                                    <div className="text-sm text-slate-600 dark:text-slate-400">Amount</div>
-                                    <div className="text-xl font-bold text-slate-900 dark:text-white">
+                                    <div className="text-sm text-[#8888a0]">Amount</div>
+                                    <div className="text-xl font-bold text-[#f0f0f5]">
                                         ${formatUSDC(BigInt(job.amount))} USDC
                                     </div>
                                 </div>
                                 <div>
-                                    <div className="text-sm text-slate-600 dark:text-slate-400">Deadline</div>
-                                    <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                                    <div className="text-sm text-[#8888a0]">Deadline</div>
+                                    <div className="text-lg font-semibold text-[#f0f0f5]">
                                         {new Date(job.deadline * 1000).toLocaleDateString()}
                                     </div>
                                 </div>
@@ -484,7 +501,7 @@ export default function JobDetailsPage() {
 
                             {/* Dispute Form */}
                             {showDisputeForm && canDispute && (
-                                <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                <div className="space-y-3 pt-4 border-t border-[#1a1a24]">
                                     <div>
                                         <Label>Dispute Reason</Label>
                                         <Textarea
@@ -517,7 +534,7 @@ export default function JobDetailsPage() {
 
                             {/* Cancel Job */}
                             {canCancel && (
-                                <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                                <div className="pt-4 border-t border-[#1a1a24]">
                                     <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-3">
                                         <p className="text-sm text-amber-900 dark:text-amber-100 font-medium mb-1">
                                             No one has accepted this job yet
@@ -550,13 +567,13 @@ export default function JobDetailsPage() {
                         <AlertDialogDescription className="space-y-3">
                             <p>
                                 This will immediately cancel the job and refund{" "}
-                                <strong className="text-slate-900 dark:text-white">
+                                <strong className="text-[#f0f0f5]">
                                     ${formatUSDC(BigInt(job?.amount || 0))} USDC
                                 </strong>{" "}
                                 to your wallet.
                             </p>
                             <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3 text-left">
-                                <p className="text-xs text-slate-600 dark:text-slate-400">
+                                <p className="text-xs text-[#8888a0]">
                                     <strong>Job:</strong> {job?.title}
                                 </p>
                             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { useAccount, useWriteContract } from "wagmi";
 import { ESCROW_ABI } from "@/lib/contracts";
 import { ESCROW_CONTRACT_ADDRESS } from "@/lib/wagmi";
 import { formatAddress } from "@/lib/utils";
-import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 
 interface JuryVotingPanelProps {
     disputeId: bigint;
@@ -31,7 +31,6 @@ export default function JuryVotingPanel({
 }: JuryVotingPanelProps) {
     const { address } = useAccount();
     const { writeContract, isPending } = useWriteContract();
-    const [selectedVote, setSelectedVote] = useState<"CLIENT" | "FREELANCER" | null>(null);
 
     const isJuror = address && jurors.includes(address);
     const hasVoted = votes.some(v => v.juror.toLowerCase() === address?.toLowerCase());
@@ -97,8 +96,8 @@ export default function JuryVotingPanel({
                                 <div
                                     key={index}
                                     className={`flex items-center justify-between p-3 rounded-lg border ${isCurrentUser
-                                            ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20"
-                                            : "border-slate-200 dark:border-slate-700"
+                                        ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20"
+                                        : "border-slate-200 dark:border-slate-700"
                                         }`}
                                 >
                                     <div className="flex items-center gap-2">

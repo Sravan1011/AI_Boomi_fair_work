@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Premium Fonts - Poppins for headings, DM Sans for body */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&display=swap');
+/* Fonts are loaded via next/font in layout.tsx — do NOT use @import url() here */
+/* @import url removed — it blocks PostCSS/Tailwind startup on slow networks */
 
 @layer base {
   :root {
@@ -388,20 +388,55 @@
   opacity: 1;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar — dark */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  background: #050505;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full;
+  background: #1a1a24;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  background: #2a2a3a;
+}
+
+/* ========================================
+   LANDING PAGE DESIGN TOKENS
+   ======================================== */
+
+:root {
+  --background-primary: #050505;
+  --background-surface: #0a0a0f;
+  --background-elevated: #111118;
+  --text-primary: #f0f0f5;
+  --text-muted: #8888a0;
+  --text-subtle: #55556a;
+  --accent-primary: #6366f1;
+  --accent-secondary: #7c3aed;
+  --border-subtle: #1a1a24;
+  --glow-color: rgba(99, 102, 241, 0.25);
+}
+
+/* Selection color */
+::selection {
+  background: rgba(99, 102, 241, 0.3);
+  color: #f0f0f5;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Landing page body override */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Navbar from "@/components/layout/Navbar";
-import { Scale, Shield, Brain, Users, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Scale, Shield, Brain, Users, ArrowRight } from "lucide-react";
 
 export default function HomePage() {
     return (

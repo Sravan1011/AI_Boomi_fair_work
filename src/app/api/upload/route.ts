@@ -46,10 +46,10 @@ export async function POST(request: NextRequest) {
 
         const data = await response.json();
         return NextResponse.json({ ipfsHash: data.IpfsHash });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("API upload error:", error);
         return NextResponse.json(
-            { error: error.message || "Upload failed" },
+            { error: error instanceof Error ? error.message : "Upload failed" },
             { status: 500 }
         );
     }

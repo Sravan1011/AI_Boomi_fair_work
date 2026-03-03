@@ -1,7 +1,6 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+
 import { Brain, TrendingUp, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
 import { AIAnalysis } from "@/types/dispute";
 
@@ -121,8 +120,8 @@ export default function AIAnalysisReport({ analysis }: AIAnalysisReportProps) {
 
                         {/* Confidence Level Badge */}
                         <div className={`px-4 py-2 rounded-full ${analysis.confidence >= 75 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400" :
-                                analysis.confidence >= 50 ? "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400" :
-                                    "bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400"
+                            analysis.confidence >= 50 ? "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400" :
+                                "bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400"
                             } border font-semibold text-sm`}>
                             {analysis.confidence >= 75 ? "High" : analysis.confidence >= 50 ? "Medium" : "Low"}
                         </div>

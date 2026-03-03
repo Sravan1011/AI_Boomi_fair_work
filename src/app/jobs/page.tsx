@@ -4,21 +4,29 @@ import { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import JobCard from "@/components/jobs/JobCard";
 import { supabase } from "@/lib/supabase";
-import {
-    Loader2, Plus, Search, Briefcase, Home, ChevronRight,
-    ChevronDown, Code, Wallet, Shield, Cpu, Palette, FileCode,
-    SlidersHorizontal, ToggleLeft
-} from "lucide-react";
+import { Plus, Search, Briefcase, ChevronDown, Code, Wallet, Shield, Cpu, Palette, FileCode } from "lucide-react";
 import Link from "next/link";
 
-// Service category pills with icons
+interface Job {
+    id: string;
+    contract_job_id: number;
+    title: string;
+    description: string;
+    amount: number;
+    deadline: number;
+    client: string;
+    freelancer?: string;
+    status: string;
+    created_at: string;
+}
+
 const servicePills = [
-    { name: "Smart Contracts", icon: FileCode, color: "bg-purple-100 text-purple-600" },
-    { name: "DeFi Apps", icon: Wallet, color: "bg-green-100 text-green-600" },
-    { name: "NFT Projects", icon: Palette, color: "bg-pink-100 text-pink-600" },
-    { name: "AI Agents", icon: Cpu, color: "bg-blue-100 text-blue-600" },
-    { name: "Auditing", icon: Shield, color: "bg-orange-100 text-orange-600" },
-    { name: "Frontend", icon: Code, color: "bg-cyan-100 text-cyan-600" },
+    { name: "Smart Contracts", icon: FileCode },
+    { name: "DeFi Apps", icon: Wallet },
+    { name: "NFT Projects", icon: Palette },
+    { name: "AI Agents", icon: Cpu },
+    { name: "Auditing", icon: Shield },
+    { name: "Frontend", icon: Code },
 ];
 
 const filterOptions = [
@@ -28,41 +36,25 @@ const filterOptions = [
 ];
 
 export default function JobsPage() {
-    const [jobs, setJobs] = useState<any[]>([]);
+    const [jobs, setJobs] = useState<Job[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<"all" | "open" | "active">("all");
     const [searchQuery, setSearchQuery] = useState("");
-    const [sortBy, setSortBy] = useState("newest");
 
     useEffect(() => {
         fetchJobs();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filter]);
 
     const fetchJobs = async () => {
         setIsLoading(true);
-
-        let query = supabase
-            .from("jobs")
-            .select("*")
-            .order("created_at", { ascending: false });
-
-        if (filter === "open") {
-            query = query.eq("status", "OPEN");
-        } else if (filter === "active") {
-            query = query.in("status", ["ACCEPTED", "SUBMITTED"]);
-        } else {
-            // For "all" filter, exclude CANCELLED and RESOLVED jobs
-            query = query.not("status", "in", '("CANCELLED","RESOLVED")');
-        }
-
+        let query = supabase.from("jobs").select("*").order("created_at", { ascending: false });
+        if (filter === "open") query = query.eq("status", "OPEN");
+        else if (filter === "active") query = query.in("status", ["ACCEPTED", "SUBMITTED"]);
+        else query = query.not("status", "in", '("CANCELLED","RESOLVED")');
         const { data, error } = await query;
-
-        if (error) {
-            console.error("Error fetching jobs:", error);
-        } else {
-            setJobs(data || []);
-        }
-
+        if (error) console.error("Error fetching jobs:", error);
+        else setJobs(data || []);
         setIsLoading(false);
     };
 
@@ -72,68 +64,40 @@ export default function JobsPage() {
     );
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-[#050505] text-[#f0f0f5]">
             <Navbar />
 
-            {/* Category Navigation Bar */}
-            <div className="border-b border-gray-200 bg-white">
-                <div className="container-custom category-nav">
-                    <span className="category-nav-item active flex items-center gap-1">
-                        <span>🔥</span> Trending
-                    </span>
-                    <span className="category-nav-item">Smart Contracts</span>
-                    <span className="category-nav-item">AI & ML</span>
-                    <span className="category-nav-item">Web3 Apps</span>
-                    <span className="category-nav-item">Design</span>
-                    <span className="category-nav-item">Writing</span>
-                    <span className="category-nav-item">Business</span>
-                    <span className="category-nav-item">Finance</span>
-                    <span className="category-nav-item">AI Services</span>
+            {/* Category Nav */}
+            <div className="border-b border-[#1a1a24] bg-[#0a0a0f]">
+                <div className="max-w-screen-xl mx-auto px-6">
+                    <div className="flex gap-6 overflow-x-auto py-3 scrollbar-hide">
+                        {["🔥 Trending", "Smart Contracts", "AI & ML", "Web3 Apps", "Design", "Writing", "Business", "Finance", "AI Services"].map((cat) => (
+                            <button key={cat} className="shrink-0 text-sm text-[#8888a0] hover:text-[#f0f0f5] transition-colors pb-0.5 border-b-2 border-transparent hover:border-[#6366f1]/40 whitespace-nowrap">
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            {/* Page Header with Breadcrumb */}
-            <div className="bg-white border-b border-gray-100">
-                <div className="container-custom pt-6 pb-8">
-                    {/* Breadcrumb */}
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                        <Home className="w-4 h-4" />
-                        <ChevronRight className="w-3 h-3" />
-                        <span>Smart Contracts</span>
-                    </div>
-
-                    {/* Title Row */}
+            {/* Page Header */}
+            <div className="border-b border-[#1a1a24] bg-[#0a0a0f]">
+                <div className="max-w-screen-xl mx-auto px-6 pt-8 pb-6">
                     <div className="flex items-start justify-between gap-4 mb-8">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                                Web3 Development
-                            </h1>
-                            <p className="text-gray-600">
-                                Build decentralized apps with skilled Web3 developers
-                                <Link href="#" className="ml-4 text-gray-900 font-medium hover:underline inline-flex items-center gap-1">
-                                    ● How FairWork Works
-                                </Link>
-                            </p>
+                            <h1 className="text-3xl font-light text-[#f0f0f5] mb-2">Web3 Development</h1>
+                            <p className="text-[#8888a0]">Build decentralized apps with skilled Web3 developers</p>
                         </div>
-                        <Link
-                            href="/jobs/create"
-                            className="btn-primary shrink-0"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Post a Job
+                        <Link href="/jobs/create" className="flex items-center gap-2 px-5 py-2.5 bg-[#6366f1] text-white rounded-xl text-sm font-medium hover:bg-[#5254cc] transition-all shadow-lg shadow-indigo-500/20 shrink-0">
+                            <Plus className="w-4 h-4" /> Post a Job
                         </Link>
                     </div>
 
-                    {/* Service Pills - Horizontal Scroll */}
-                    <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+                    {/* Service Pills */}
+                    <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
                         {servicePills.map((pill) => (
-                            <button
-                                key={pill.name}
-                                className="service-pill shrink-0"
-                            >
-                                <div className={`service-pill-icon ${pill.color}`}>
-                                    <pill.icon className="w-4 h-4" />
-                                </div>
+                            <button key={pill.name} className="flex items-center gap-2 shrink-0 px-4 py-2 rounded-xl bg-[#111118] border border-[#1a1a24] text-sm text-[#8888a0] hover:text-[#f0f0f5] hover:border-[#6366f1]/30 transition-all">
+                                <pill.icon className="w-4 h-4" />
                                 {pill.name}
                             </button>
                         ))}
@@ -141,121 +105,86 @@ export default function JobsPage() {
                 </div>
             </div>
 
-            {/* Filters Bar */}
-            <div className="bg-white border-b border-gray-100 sticky top-20 z-40">
-                <div className="container-custom py-4">
+            {/* Filters */}
+            <div className="border-b border-[#1a1a24] bg-[#050505] sticky top-16 z-40">
+                <div className="max-w-screen-xl mx-auto px-6 py-3">
                     <div className="flex flex-wrap items-center justify-between gap-4">
-                        {/* Left: Filter Dropdowns */}
                         <div className="flex items-center gap-3">
-                            <button className="filter-dropdown">
-                                Service options
-                                <ChevronDown className="w-4 h-4" />
-                            </button>
-                            <button className="filter-dropdown">
-                                Budget
-                                <ChevronDown className="w-4 h-4" />
-                            </button>
-                            <button className="filter-dropdown">
-                                Delivery time
-                                <ChevronDown className="w-4 h-4" />
-                            </button>
-
-                            {/* Filter Pills */}
-                            <div className="hidden md:flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
+                            {["Service options", "Budget", "Delivery time"].map((f) => (
+                                <button key={f} className="flex items-center gap-1.5 px-4 py-2 text-sm text-[#8888a0] border border-[#1a1a24] rounded-lg hover:border-[#6366f1]/30 hover:text-[#f0f0f5] transition-all">
+                                    {f} <ChevronDown className="w-3.5 h-3.5" />
+                                </button>
+                            ))}
+                            <div className="hidden md:flex items-center gap-2 ml-4 pl-4 border-l border-[#1a1a24]">
                                 {filterOptions.map((option) => (
                                     <button
                                         key={option.value}
-                                        onClick={() => setFilter(option.value as any)}
-                                        className={`category-pill !px-4 !py-2 ${filter === option.value ? "active" : ""}`}
+                                        onClick={() => setFilter(option.value as "all" | "open" | "active")}
+                                        className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${filter === option.value
+                                            ? "bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/30"
+                                            : "text-[#8888a0] hover:text-[#f0f0f5] border border-transparent"
+                                            }`}
                                     >
                                         {option.label}
                                     </button>
                                 ))}
                             </div>
                         </div>
-
-                        {/* Right: Toggles & Sort */}
-                        <div className="flex items-center gap-6">
-                            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                                <input type="checkbox" className="sr-only" />
-                                <div className="w-10 h-6 bg-gray-200 rounded-full relative transition-colors">
-                                    <div className="w-4 h-4 bg-white rounded-full absolute left-1 top-1 shadow transition-transform" />
-                                </div>
-                                Pro services
-                            </label>
-                            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                                <input type="checkbox" className="sr-only" />
-                                <div className="w-10 h-6 bg-gray-200 rounded-full relative transition-colors">
-                                    <div className="w-4 h-4 bg-white rounded-full absolute left-1 top-1 shadow transition-transform" />
-                                </div>
-                                Verified only
-                            </label>
-                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Results Section */}
-            <div className="container-custom py-6">
-                {/* Results Count & Sort */}
+            {/* Results */}
+            <div className="max-w-screen-xl mx-auto px-6 py-8">
                 <div className="flex items-center justify-between mb-6">
-                    <p className="text-gray-600 text-sm">
-                        <span className="font-semibold text-gray-900">{filteredJobs.length}</span> results
+                    <p className="text-[#8888a0] text-sm">
+                        <span className="font-medium text-[#f0f0f5]">{filteredJobs.length}</span> results
                     </p>
                     <div className="flex items-center gap-2 text-sm">
-                        <span className="text-gray-500">Sort by:</span>
-                        <button className="font-semibold text-gray-900 flex items-center gap-1">
-                            Best selling
-                            <ChevronDown className="w-4 h-4" />
+                        <span className="text-[#8888a0]">Sort by:</span>
+                        <button className="font-medium text-[#f0f0f5] flex items-center gap-1 hover:text-[#6366f1] transition-colors">
+                            Best selling <ChevronDown className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
 
-                {/* Search Bar */}
+                {/* Search */}
                 <div className="mb-8">
                     <div className="relative max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8888a0]" />
                         <input
                             type="text"
                             placeholder="Search jobs..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1DBF73]/20 focus:border-[#1DBF73] transition-all"
+                            className="w-full pl-11 pr-4 py-2.5 bg-[#111118] border border-[#1a1a24] rounded-xl text-[#f0f0f5] placeholder:text-[#8888a0] text-sm focus:outline-none focus:border-[#6366f1]/40 transition-colors"
                         />
                     </div>
                 </div>
 
-                {/* Jobs Grid */}
+                {/* Grid */}
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-24">
-                        <div className="w-12 h-12 border-4 border-gray-200 border-t-[#1DBF73] rounded-full animate-spin mb-4" />
-                        <p className="text-gray-500 font-medium">Loading jobs...</p>
+                        <div className="w-10 h-10 border-2 border-[#1a1a24] border-t-[#6366f1] rounded-full animate-spin mb-4" />
+                        <p className="text-[#8888a0] text-sm">Loading jobs...</p>
                     </div>
                 ) : filteredJobs.length === 0 ? (
-                    <div className="text-center py-24 bg-gray-50 rounded-2xl">
-                        <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-                            <Briefcase className="w-10 h-10 text-gray-400" />
+                    <div className="text-center py-24 rounded-2xl border border-[#1a1a24] bg-[#111118]/40">
+                        <div className="w-16 h-16 bg-[#1a1a24] rounded-2xl flex items-center justify-center mx-auto mb-5">
+                            <Briefcase className="w-8 h-8 text-[#8888a0]" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">
-                            No jobs found
-                        </h3>
-                        <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                        <h3 className="text-lg font-medium text-[#f0f0f5] mb-2">No jobs found</h3>
+                        <p className="text-[#8888a0] mb-8 max-w-sm mx-auto text-sm">
                             Be the first to post a job on FairWork and find amazing Web3 talent!
                         </p>
-                        <Link href="/jobs/create" className="btn-primary">
+                        <Link href="/jobs/create" className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#6366f1] text-white rounded-xl text-sm font-medium hover:bg-[#5254cc] transition-all">
                             Post the First Job
                         </Link>
                     </div>
                 ) : (
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filteredJobs.map((job, index) => (
-                            <div
-                                key={job.id}
-                                className="animate-fade-in-up"
-                                style={{ animationDelay: `${index * 0.05}s` }}
-                            >
-                                <JobCard job={job} />
-                            </div>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                        {filteredJobs.map((job) => (
+                            <JobCard key={job.id} job={job} />
                         ))}
                     </div>
                 )}

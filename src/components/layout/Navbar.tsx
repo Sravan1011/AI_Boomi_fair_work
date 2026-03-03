@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Briefcase, Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const navLinks = [
@@ -19,77 +18,47 @@ export default function Navbar() {
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 20);
-        };
+        const handleScroll = () => setScrolled(window.scrollY > 20);
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    const isHomePage = pathname === "/";
-
     return (
         <nav
-            className={`sticky top-0 z-50 transition-all duration-300 ${scrolled
-                ? "bg-white shadow-lg shadow-black/5"
-                : isHomePage
-                    ? "bg-transparent"
-                    : "bg-white border-b border-gray-100"
+            className={`sticky top-0 z-50 transition-all duration-300 border-b ${scrolled
+                    ? "bg-[#0a0a0f]/90 backdrop-blur-xl border-[#1a1a24]"
+                    : "bg-[#0a0a0f]/70 backdrop-blur-md border-[#1a1a24]/50"
                 }`}
         >
-            <div className="container-custom h-20 flex items-center justify-between">
+            <div className="max-w-screen-xl mx-auto px-6 h-16 flex items-center justify-between">
                 {/* Logo */}
-                <Link href="/" className="flex items-center gap-3 group">
-                    <div className="relative w-10 h-10">
-                        <Image
-                            src="/images/logo-icon-new.png"
-                            alt="FairWork Logo"
-                            fill
-                            className="object-contain"
-                        />
+                <Link href="/" className="flex items-center gap-2.5 group">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6366f1] to-[#7c3aed] flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <span className="text-white font-bold text-sm">F</span>
                     </div>
-                    <div className="relative w-32 h-8">
-                        <Image
-                            src="/images/logo-text-new.png"
-                            alt="FairWork"
-                            fill
-                            className="object-contain object-left"
-                        />
-                    </div>
+                    <span className="text-[#f0f0f5] font-semibold text-base tracking-tight">
+                        FairWork
+                    </span>
                 </Link>
 
-                {/* Desktop Navigation */}
-                <div className="hidden md:flex items-center gap-8">
+                {/* Desktop Nav */}
+                <div className="hidden md:flex items-center gap-1">
                     {navLinks.map((link) => (
                         <Link
                             key={link.href}
                             href={link.href}
-                            className={`text-sm font-medium transition-all relative group ${pathname === link.href
-                                ? "text-[#6B5DD3]"
-                                : scrolled || !isHomePage
-                                    ? "text-gray-600 hover:text-[#6B5DD3]"
-                                    : "text-white/90 hover:text-white"
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${pathname === link.href
+                                    ? "text-[#6366f1] bg-[#6366f1]/10"
+                                    : "text-[#8888a0] hover:text-[#f0f0f5] hover:bg-white/5"
                                 }`}
                         >
                             {link.label}
-                            <span className={`absolute -bottom-1 left-0 h-0.5 bg-[#6B5DD3] transition-all ${pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
-                                }`} />
                         </Link>
                     ))}
                 </div>
 
-                {/* Right Side: CTA + Wallet */}
-                <div className="flex items-center gap-4">
-                    <Link
-                        href="/jobs/create"
-                        className={`hidden lg:flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${scrolled || !isHomePage
-                            ? "bg-[#6B5DD3] text-white hover:bg-[#5B4FC5]"
-                            : "bg-white text-[#003912] hover:bg-gray-100"
-                            }`}
-                    >
-                        Post a Job
-                    </Link>
-
+                {/* Right: Wallet + CTA */}
+                <div className="flex items-center gap-3">
                     <div className="hidden md:block">
                         <ConnectButton
                             showBalance={false}
@@ -97,42 +66,39 @@ export default function Navbar() {
                             chainStatus="icon"
                         />
                     </div>
-
-                    {/* Mobile Menu Button */}
+                    <Link
+                        href="/jobs/create"
+                        className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-lg bg-[#6366f1] text-white text-sm font-medium hover:bg-[#5254cc] transition-all shadow-lg shadow-indigo-500/20"
+                    >
+                        Post a Job
+                    </Link>
                     <button
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className={`md:hidden p-2 rounded-lg transition-colors ${scrolled || !isHomePage
-                            ? "text-gray-600 hover:bg-gray-100"
-                            : "text-white hover:bg-white/10"
-                            }`}
+                        className="md:hidden p-2 rounded-lg text-[#8888a0] hover:text-[#f0f0f5] hover:bg-white/5 transition-colors"
                     >
-                        {mobileMenuOpen ? (
-                            <X className="w-6 h-6" />
-                        ) : (
-                            <Menu className="w-6 h-6" />
-                        )}
+                        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                     </button>
                 </div>
             </div>
 
             {/* Mobile Menu */}
             {mobileMenuOpen && (
-                <div className="md:hidden bg-white border-t border-gray-100 shadow-xl">
-                    <div className="container-custom py-6 space-y-4">
+                <div className="md:hidden bg-[#0a0a0f] border-t border-[#1a1a24]">
+                    <div className="max-w-screen-xl mx-auto px-6 py-4 space-y-1">
                         {navLinks.map((link) => (
                             <Link
                                 key={link.href}
                                 href={link.href}
                                 onClick={() => setMobileMenuOpen(false)}
-                                className={`block text-base font-medium py-2 ${pathname === link.href
-                                    ? "text-[#6B5DD3]"
-                                    : "text-gray-600"
+                                className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${pathname === link.href
+                                        ? "text-[#6366f1] bg-[#6366f1]/10"
+                                        : "text-[#8888a0] hover:text-[#f0f0f5] hover:bg-white/5"
                                     }`}
                             >
                                 {link.label}
                             </Link>
                         ))}
-                        <div className="pt-4 border-t border-gray-100">
+                        <div className="pt-3 border-t border-[#1a1a24]">
                             <ConnectButton />
                         </div>
                     </div>

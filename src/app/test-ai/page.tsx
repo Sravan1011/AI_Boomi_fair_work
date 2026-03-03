@@ -5,9 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
 import AIAnalysisReport from "@/components/disputes/AIAnalysisReport";
+import { AIAnalysis } from "@/types/dispute";
 import {
-    Brain, Scale, ArrowRight, ArrowLeft, Play, CheckCircle,
-    Users, Clock, Briefcase, Lock, Zap, Star, Sparkles
+    Brain, ArrowRight, ArrowLeft, Play, CheckCircle,
+    Users, Briefcase, Zap
 } from "lucide-react";
 
 // Test scenarios data
@@ -105,7 +106,7 @@ I can provide Copyscape reports proving zero plagiarism. The client is making ba
 
 export default function TestAIPage() {
     const [selectedScenario, setSelectedScenario] = useState(testScenarios[0]);
-    const [analysis, setAnalysis] = useState<any>(null);
+    const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showDetails, setShowDetails] = useState(false);
@@ -134,7 +135,7 @@ export default function TestAIPage() {
             } else {
                 setError(data.error || "Analysis failed");
             }
-        } catch (err) {
+        } catch {
             setError("Failed to connect to AI service");
         } finally {
             setLoading(false);
@@ -261,24 +262,24 @@ export default function TestAIPage() {
                                     setShowDetails(false);
                                 }}
                                 className={`minimal-card group text-left ${selectedScenario.id === scenario.id
-                                        ? "!border-[#6B5DD3] !shadow-lg !shadow-purple-100"
-                                        : ""
+                                    ? "!border-[#6B5DD3] !shadow-lg !shadow-purple-100"
+                                    : ""
                                     }`}
                             >
                                 <div className="text-4xl mb-4">{scenario.icon}</div>
                                 <h3 className={`font-semibold mb-2 transition-colors ${selectedScenario.id === scenario.id
-                                        ? "text-[#6B5DD3]"
-                                        : "text-gray-900 group-hover:text-[#6B5DD3]"
+                                    ? "text-[#6B5DD3]"
+                                    : "text-gray-900 group-hover:text-[#6B5DD3]"
                                     }`}>
                                     {scenario.name}
                                 </h3>
                                 <p className="text-gray-500 text-sm mb-4">{scenario.description}</p>
                                 <div className="flex items-center gap-2">
                                     <span className={`text-xs font-semibold px-3 py-1 rounded-full ${scenario.expectedResult === "CLIENT"
-                                            ? "bg-red-100 text-red-700"
-                                            : scenario.expectedResult === "FREELANCER"
-                                                ? "bg-green-100 text-green-700"
-                                                : "bg-yellow-100 text-yellow-700"
+                                        ? "bg-red-100 text-red-700"
+                                        : scenario.expectedResult === "FREELANCER"
+                                            ? "bg-green-100 text-green-700"
+                                            : "bg-yellow-100 text-yellow-700"
                                         }`}>
                                         {scenario.expectedResult}
                                     </span>
@@ -334,7 +335,7 @@ export default function TestAIPage() {
                                     <div>
                                         <h4 className="font-semibold text-red-700 mb-2 flex items-center gap-2">
                                             <Users className="w-4 h-4" />
-                                            Client's Evidence
+                                            Client&apos;s Evidence
                                         </h4>
                                         <div className="bg-red-50 p-4 rounded-xl text-sm text-gray-700 whitespace-pre-wrap border border-red-100 h-48 overflow-y-auto">
                                             {selectedScenario.clientEvidence}
@@ -343,7 +344,7 @@ export default function TestAIPage() {
                                     <div>
                                         <h4 className="font-semibold text-green-700 mb-2 flex items-center gap-2">
                                             <Users className="w-4 h-4" />
-                                            Freelancer's Evidence
+                                            Freelancer&apos;s Evidence
                                         </h4>
                                         <div className="bg-green-50 p-4 rounded-xl text-sm text-gray-700 whitespace-pre-wrap border border-green-100 h-48 overflow-y-auto">
                                             {selectedScenario.freelancerEvidence}

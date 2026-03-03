@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFile } from "fs/promises";
+
 
 /**
  * API Route: Upload file to IPFS via Pinata

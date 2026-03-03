@@ -1,0 +1,12 @@
+{
+    "version": "1.0",
+    "configurations": [
+        {
+            "name": "FairWork Dev Server",
+            "type": "web",
+            "command": "npm run dev",
+            "url": "http://localhost:3000",
+            "cwd": "/Users/ava/Documents/Saasi_Boom"
+        }
+    ]
+}
