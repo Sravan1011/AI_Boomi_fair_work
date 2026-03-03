@@ -21,6 +21,7 @@ interface JobCardProps {
 
 const statusConfig: Record<string, { bg: string; text: string; dot: string; label: string }> = {
     OPEN: { bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400", label: "Open" },
+    WAITING_CLIENT_APPROVAL: { bg: "bg-indigo-500/10", text: "text-indigo-400", dot: "bg-indigo-400", label: "Pending Client Approval" },
     ACCEPTED: { bg: "bg-blue-500/10", text: "text-blue-400", dot: "bg-blue-400", label: "In Progress" },
     SUBMITTED: { bg: "bg-amber-500/10", text: "text-amber-400", dot: "bg-amber-400", label: "Pending Review" },
     APPROVED: { bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400", label: "Completed" },

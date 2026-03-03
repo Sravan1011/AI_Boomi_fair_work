@@ -50,7 +50,7 @@ export default function JobsPage() {
         setIsLoading(true);
         let query = supabase.from("jobs").select("*").order("created_at", { ascending: false });
         if (filter === "open") query = query.eq("status", "OPEN");
-        else if (filter === "active") query = query.in("status", ["ACCEPTED", "SUBMITTED"]);
+        else if (filter === "active") query = query.in("status", ["WAITING_CLIENT_APPROVAL", "ACCEPTED", "SUBMITTED"]);
         else query = query.not("status", "in", '("CANCELLED","RESOLVED")');
         const { data, error } = await query;
         if (error) console.error("Error fetching jobs:", error);

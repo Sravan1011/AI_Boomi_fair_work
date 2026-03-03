@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +13,8 @@ import { ESCROW_ABI } from "@/lib/contracts";
 import { ESCROW_CONTRACT_ADDRESS } from "@/lib/wagmi";
 import { supabase } from "@/lib/supabase";
 import { formatUSDC, formatAddress, getIPFSUrl } from "@/lib/utils";
-import { Loader2, ExternalLink, Upload, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { Loader2, ExternalLink, Upload, CheckCircle2, AlertTriangle, XCircle, MessageCircle, UserCheck } from "lucide-react";
+import JobXmtpChat from "@/components/chat/JobXmtpChat";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -57,6 +57,8 @@ export default function JobDetailsPage() {
     const [isCancelling, setIsCancelling] = useState(false);
     const [pendingTxHash, setPendingTxHash] = useState<`0x${string}` | undefined>();
     const [pendingAction, setPendingAction] = useState<string | null>(null);
+    const [jobEventNotice, setJobEventNotice] = useState<string | null>(null);
+    const chatSectionRef = useRef<HTMLDivElement | null>(null);
 
     // Wait for ANY transaction confirmation
     const { data: txReceipt } = useWaitForTransactionReceipt({
@@ -76,6 +78,32 @@ export default function JobDetailsPage() {
             setJob(data);
         }
         setIsLoading(false);
+    };
+
+    const createNotification = async ({
+        wallet,
+        type,
+        title,
+        message,
+        jobId,
+    }: {
+        wallet: string;
+        type: string;
+        title: string;
+        message: string;
+        jobId?: string;
+    }) => {
+        try {
+            await supabase.from("notifications").insert({
+                wallet: wallet.toLowerCase(),
+                type,
+                title,
+                message,
+                job_id: jobId,
+            });
+        } catch (error) {
+            console.error("Failed to create notification:", error);
+        }
     };
 
     useEffect(() => {
@@ -103,9 +131,38 @@ export default function JobDetailsPage() {
                         break;
 
                     case "accept":
-                        await supabase.from("jobs").update({ freelancer: address, status: "ACCEPTED" }).eq("id", job.id);
-                        alert("✅ Job accepted successfully!");
-                        fetchJob();
+                        {
+                            const { error } = await supabase
+                                .from("jobs")
+                                .update({ freelancer: address, status: "WAITING_CLIENT_APPROVAL" })
+                                .eq("id", job.id);
+
+                            // Keep UI responsive even if Supabase sync is delayed/fails.
+                            setJob((prev) =>
+                                prev
+                                    ? {
+                                        ...prev,
+                                        freelancer: address || prev.freelancer,
+                                        status: "WAITING_CLIENT_APPROVAL",
+                                    }
+                                    : prev
+                            );
+
+                            if (error) {
+                                console.error("Supabase update failed after accept:", error);
+                                setJobEventNotice("Accepted on-chain. Waiting for client approval. Database sync is pending.");
+                            } else {
+                                setJobEventNotice("Accepted on-chain. Waiting for client approval before chat and work start.");
+                                await createNotification({
+                                    wallet: job.client,
+                                    type: "job_acceptance_requested",
+                                    title: "Freelancer requested approval",
+                                    message: `${formatAddress(address || "")} accepted "${job.title}". Approve to enable chat and start work.`,
+                                    jobId: job.id,
+                                });
+                                fetchJob();
+                            }
+                        }
                         break;
 
                     case "approve":
@@ -151,11 +208,12 @@ export default function JobDetailsPage() {
             functionName: "acceptJob",
             args: [BigInt(job.contract_job_id)],
         }, {
-            onSuccess: (txHash) => {
-                console.log("✅ Accept tx sent:", txHash);
-                setPendingTxHash(txHash);
-                setPendingAction("accept");
-            },
+                onSuccess: (txHash) => {
+                    console.log("✅ Accept tx sent:", txHash);
+                    setJobEventNotice("Acceptance transaction sent. Waiting for on-chain confirmation...");
+                    setPendingTxHash(txHash);
+                    setPendingAction("accept");
+                },
             onError: (error: Error) => {
                 console.error("❌ Accept job error:", error);
                 alert(`❌ Failed to accept job: ${error.message}`);
@@ -225,6 +283,36 @@ export default function JobDetailsPage() {
                 alert(`❌ Failed to approve job: ${error.message}`);
             },
         });
+    };
+
+    const handleApproveFreelancerAcceptance = async () => {
+        if (!job || !job.freelancer || !isClient) return;
+
+        const { error } = await supabase
+            .from("jobs")
+            .update({ status: "ACCEPTED" })
+            .eq("id", job.id);
+
+        if (error) {
+            console.error("Failed to approve freelancer acceptance:", error);
+            alert(`❌ Failed to approve freelancer: ${error.message}`);
+            return;
+        }
+
+        setJob((prev) => (prev ? { ...prev, status: "ACCEPTED" } : prev));
+        setJobEventNotice("Freelancer approved. Chat is now enabled.");
+
+        await createNotification({
+            wallet: job.freelancer,
+            type: "job_accepted",
+            title: "Your acceptance was approved",
+            message: `Client approved your acceptance for "${job.title}". You can now chat and proceed with the job.`,
+            jobId: job.id,
+        });
+
+        setTimeout(() => {
+            chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 300);
     };
 
     const handleRaiseDispute = async () => {
@@ -355,29 +443,36 @@ export default function JobDetailsPage() {
     const isClient = address?.toLowerCase() === job.client.toLowerCase();
     const isFreelancer = address?.toLowerCase() === job.freelancer?.toLowerCase();
     const canAccept = job.status === "OPEN" && !isClient && isConnected;
+    const canApproveFreelancer = job.status === "WAITING_CLIENT_APPROVAL" && isClient;
+    const isFreelancerWaitingApproval = job.status === "WAITING_CLIENT_APPROVAL" && isFreelancer;
     const canSubmit = job.status === "ACCEPTED" && isFreelancer;
     const canApprove = job.status === "SUBMITTED" && isClient;
     const canDispute = job.status === "SUBMITTED" && (isClient || isFreelancer);
     const canCancel = job.status === "OPEN" && isClient && isConnected;
+    const canAccessChat =
+        Boolean(job.freelancer) &&
+        (isClient || isFreelancer) &&
+        ["ACCEPTED", "SUBMITTED", "DISPUTED", "APPROVED", "RESOLVED"].includes(job.status);
+    const isChatPhase = ["ACCEPTED", "SUBMITTED", "DISPUTED", "APPROVED", "RESOLVED"].includes(job.status);
+    const isAwaitingAcceptConfirmation = pendingAction === "accept" && Boolean(pendingTxHash) && !txReceipt;
+    const chatWithAddress = isClient ? job.freelancer : job.client;
+    const statusLabel = job.status === "WAITING_CLIENT_APPROVAL"
+        ? "PENDING CLIENT APPROVAL"
+        : job.status;
 
     return (
         <div className="min-h-screen bg-[#050505]">
             <Navbar />
 
-            <div className="container mx-auto px-6 py-12">
-                <div className="max-w-4xl mx-auto space-y-6">
-                    {/* Job Header */}
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-start justify-between">
+            <div className="max-w-[1500px] mx-auto px-4 md:px-6 py-6">
+                <div className="grid lg:grid-cols-[360px_1fr] gap-5 items-start">
+                    <aside className="rounded-2xl border border-[#1a1a24] bg-[#0d0d12] overflow-hidden lg:sticky lg:top-24">
+                        <div className="px-5 py-4 border-b border-[#1a1a24] bg-[#101119]">
+                            <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <CardTitle className="text-2xl mb-2">{job.title}</CardTitle>
-                                    <div className="flex items-center gap-3 text-sm text-[#8888a0]">
-                                        <span>Client: {formatAddress(job.client)}</span>
-                                        {job.freelancer && (
-                                            <span>• Freelancer: {formatAddress(job.freelancer)}</span>
-                                        )}
-                                    </div>
+                                    <p className="text-[11px] uppercase tracking-widest text-[#82839a]">Job Workspace</p>
+                                    <h1 className="text-xl font-semibold text-[#f0f0f5] mt-1 line-clamp-2">{job.title}</h1>
+                                    <p className="text-xs text-[#8f90a6] mt-1">Contract #{job.contract_job_id}</p>
                                 </div>
                                 <Badge variant={
                                     job.status === "OPEN" ? "success" :
@@ -385,29 +480,31 @@ export default function JobDetailsPage() {
                                             job.status === "DISPUTED" ? "danger" :
                                                 "warning"
                                 }>
-                                    {job.status}
+                                    {statusLabel}
                                 </Badge>
                             </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <h3 className="font-semibold text-[#f0f0f5] mb-2">Description</h3>
-                                <p className="text-slate-700 dark:text-slate-300">{job.description}</p>
+                        </div>
+
+                        <div className="p-5 space-y-5">
+                            <div className="rounded-xl border border-[#252635] bg-[#12131b] p-3">
+                                <p className="text-xs text-[#8c8ea4] mb-2">Project Brief</p>
+                                <p className="text-sm text-[#d5d7e4] leading-relaxed line-clamp-4">{job.description}</p>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#1a1a24]">
-                                <div>
-                                    <div className="text-sm text-[#8888a0]">Amount</div>
-                                    <div className="text-xl font-bold text-[#f0f0f5]">
-                                        ${formatUSDC(BigInt(job.amount))} USDC
-                                    </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="rounded-lg border border-[#242535] bg-[#11121a] px-3 py-2">
+                                    <p className="text-[11px] text-[#8b8ea1]">Amount</p>
+                                    <p className="text-sm font-semibold text-[#f0f0f5]">${formatUSDC(BigInt(job.amount))} USDC</p>
                                 </div>
-                                <div>
-                                    <div className="text-sm text-[#8888a0]">Deadline</div>
-                                    <div className="text-lg font-semibold text-[#f0f0f5]">
-                                        {new Date(job.deadline * 1000).toLocaleDateString()}
-                                    </div>
+                                <div className="rounded-lg border border-[#242535] bg-[#11121a] px-3 py-2">
+                                    <p className="text-[11px] text-[#8b8ea1]">Deadline</p>
+                                    <p className="text-sm font-semibold text-[#f0f0f5]">{new Date(job.deadline * 1000).toLocaleDateString()}</p>
                                 </div>
+                            </div>
+
+                            <div className="rounded-lg border border-[#242535] bg-[#11121a] px-3 py-2 text-xs">
+                                <p className="text-[#f0f0f5]">Client: <span className="text-[#8f90a6]">{formatAddress(job.client)}</span></p>
+                                <p className="text-[#f0f0f5] mt-1">Freelancer: <span className="text-[#8f90a6]">{job.freelancer ? formatAddress(job.freelancer) : "Not assigned"}</span></p>
                             </div>
 
                             {job.description_ipfs && (
@@ -415,134 +512,126 @@ export default function JobDetailsPage() {
                                     href={getIPFSUrl(job.description_ipfs)}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                                    className="inline-flex items-center gap-2 text-xs text-indigo-300 hover:text-indigo-200"
                                 >
-                                    View on IPFS <ExternalLink className="w-4 h-4" />
+                                    View Description on IPFS <ExternalLink className="w-3.5 h-3.5" />
                                 </a>
                             )}
-                        </CardContent>
-                    </Card>
 
-                    {/* Deliverable Section */}
-                    {job.deliverable_ipfs && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Deliverable</CardTitle>
-                            </CardHeader>
-                            <CardContent>
+                            {job.deliverable_ipfs && (
                                 <a
                                     href={getIPFSUrl(job.deliverable_ipfs)}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:underline"
+                                    className="inline-flex items-center gap-2 text-xs text-emerald-300 hover:text-emerald-200"
                                 >
-                                    View Deliverable on IPFS <ExternalLink className="w-4 h-4" />
+                                    View Deliverable on IPFS <ExternalLink className="w-3.5 h-3.5" />
                                 </a>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Actions */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Actions</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Accept Job */}
-                            {canAccept && (
-                                <Button onClick={handleAcceptJob} disabled={isPending} className="w-full">
-                                    {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                    Accept Job
-                                </Button>
                             )}
 
-                            {/* Submit Deliverable */}
-                            {canSubmit && (
-                                <div className="space-y-3">
-                                    <Label>Upload Deliverable</Label>
-                                    <Input
-                                        type="file"
-                                        onChange={(e) => setDeliverableFile(e.target.files?.[0] || null)}
-                                    />
-                                    <Button
-                                        onClick={handleSubmitDeliverable}
-                                        disabled={!deliverableFile || isPending}
-                                        className="w-full gap-2"
-                                    >
-                                        {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                                        Submit Deliverable
-                                    </Button>
-                                </div>
-                            )}
-
-                            {/* Approve or Dispute */}
-                            {canApprove && (
-                                <div className="space-y-3">
-                                    <Button
-                                        onClick={handleApproveJob}
-                                        disabled={isPending}
-                                        className="w-full gap-2"
-                                        variant="default"
-                                    >
-                                        {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                        Approve & Release Funds
-                                    </Button>
-
-                                    <Button
-                                        onClick={() => setShowDisputeForm(!showDisputeForm)}
-                                        variant="destructive"
-                                        className="w-full gap-2"
-                                    >
-                                        <AlertTriangle className="w-4 h-4" />
-                                        Raise Dispute
-                                    </Button>
-                                </div>
-                            )}
-
-                            {/* Dispute Form */}
-                            {showDisputeForm && canDispute && (
-                                <div className="space-y-3 pt-4 border-t border-[#1a1a24]">
-                                    <div>
-                                        <Label>Dispute Reason</Label>
-                                        <Textarea
-                                            value={disputeReason}
-                                            onChange={(e) => setDisputeReason(e.target.value)}
-                                            placeholder="Explain why you're raising a dispute..."
-                                            rows={4}
-                                            className="mt-2"
-                                        />
+                            <div className="pt-2 border-t border-[#1f202b] space-y-3">
+                                {jobEventNotice && (
+                                    <div className="rounded-lg border border-emerald-600/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+                                        {jobEventNotice}
                                     </div>
-                                    <div>
-                                        <Label>Evidence (PDF, images, etc.)</Label>
-                                        <Input
-                                            type="file"
-                                            onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
-                                            className="mt-2"
-                                        />
-                                    </div>
-                                    <Button
-                                        onClick={handleRaiseDispute}
-                                        disabled={!disputeReason || !evidenceFile || isPending}
-                                        variant="destructive"
-                                        className="w-full"
-                                    >
-                                        {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                        Submit Dispute
-                                    </Button>
-                                </div>
-                            )}
+                                )}
 
-                            {/* Cancel Job */}
-                            {canCancel && (
-                                <div className="pt-4 border-t border-[#1a1a24]">
-                                    <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-3">
-                                        <p className="text-sm text-amber-900 dark:text-amber-100 font-medium mb-1">
-                                            No one has accepted this job yet
-                                        </p>
-                                        <p className="text-xs text-amber-700 dark:text-amber-300">
-                                            You can cancel and get a full refund of <strong>${formatUSDC(BigInt(job.amount))} USDC</strong>
-                                        </p>
+                                {isAwaitingAcceptConfirmation && (
+                                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
+                                        Acceptance is pending on-chain confirmation.
                                     </div>
+                                )}
+
+                                {canAccept && (
+                                    <div className="space-y-2">
+                                        <Button onClick={handleAcceptJob} disabled={isPending} className="w-full">
+                                            {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                            Accept Job
+                                        </Button>
+                                        <div className="w-full rounded-lg border border-[#1a1a24] bg-[#0b0b10] px-3 py-2 text-xs text-[#8888a0]">
+                                            <span className="inline-flex items-center gap-1.5">
+                                                <MessageCircle className="w-3.5 h-3.5" />
+                                                Chat unlocks after client approval.
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {canApproveFreelancer && (
+                                    <div className="space-y-2">
+                                        <div className="w-full rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs text-indigo-300">
+                                            Freelancer accepted on-chain. Approve to enable chat.
+                                        </div>
+                                        <Button onClick={handleApproveFreelancerAcceptance} className="w-full gap-2">
+                                            <UserCheck className="w-4 h-4" />
+                                            Approve Freelancer
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {isFreelancerWaitingApproval && (
+                                    <div className="w-full rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+                                        Waiting for client approval.
+                                    </div>
+                                )}
+
+                                {canSubmit && (
+                                    <div className="space-y-2">
+                                        <Label>Upload Deliverable</Label>
+                                        <Input type="file" onChange={(e) => setDeliverableFile(e.target.files?.[0] || null)} />
+                                        <Button onClick={handleSubmitDeliverable} disabled={!deliverableFile || isPending} className="w-full gap-2">
+                                            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                            Submit Deliverable
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {canApprove && (
+                                    <div className="space-y-2">
+                                        <Button onClick={handleApproveJob} disabled={isPending} className="w-full gap-2" variant="default">
+                                            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                            Approve & Release Funds
+                                        </Button>
+                                        <Button onClick={() => setShowDisputeForm(!showDisputeForm)} variant="destructive" className="w-full gap-2">
+                                            <AlertTriangle className="w-4 h-4" />
+                                            Raise Dispute
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {showDisputeForm && canDispute && (
+                                    <div className="space-y-2 pt-2 border-t border-[#1a1a24]">
+                                        <div>
+                                            <Label>Dispute Reason</Label>
+                                            <Textarea
+                                                value={disputeReason}
+                                                onChange={(e) => setDisputeReason(e.target.value)}
+                                                placeholder="Explain why you're raising a dispute..."
+                                                rows={4}
+                                                className="mt-2"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label>Evidence</Label>
+                                            <Input
+                                                type="file"
+                                                onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
+                                                className="mt-2"
+                                            />
+                                        </div>
+                                        <Button
+                                            onClick={handleRaiseDispute}
+                                            disabled={!disputeReason || !evidenceFile || isPending}
+                                            variant="destructive"
+                                            className="w-full"
+                                        >
+                                            {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                            Submit Dispute
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {canCancel && (
                                     <Button
                                         onClick={() => setShowCancelDialog(true)}
                                         disabled={isCancelling || isPending}
@@ -552,10 +641,60 @@ export default function JobDetailsPage() {
                                         <XCircle className="w-4 h-4" />
                                         Cancel Job & Get Refund
                                     </Button>
+                                )}
+
+                                {isChatPhase && (
+                                    canAccessChat && chatWithAddress ? (
+                                        <Button
+                                            onClick={() => chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                                            variant="outline"
+                                            className="w-full gap-2"
+                                        >
+                                            <MessageCircle className="w-4 h-4" />
+                                            Chat with {formatAddress(chatWithAddress)}
+                                        </Button>
+                                    ) : (
+                                        <div className="w-full rounded-lg border border-[#1a1a24] bg-[#0b0b10] px-3 py-2 text-xs text-[#8888a0]">
+                                            Chat is available only to the client and approved freelancer.
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        </div>
+                    </aside>
+
+                    <section ref={chatSectionRef} className="rounded-2xl border border-[#1a1a24] bg-[#0d0d12] overflow-hidden min-h-[760px]">
+                        <div className="px-5 py-4 border-b border-[#1a1a24] bg-[#101119]">
+                            <p className="text-[11px] uppercase tracking-widest text-[#82839a]">Collaboration</p>
+                            <h2 className="text-lg font-semibold text-[#f0f0f5] mt-1">Client-Freelancer Chat Room</h2>
+                            <p className="text-xs text-[#8f90a6] mt-1">
+                                Chat and collaboration are enabled after client approval.
+                            </p>
+                        </div>
+
+                        <div className="p-4 md:p-5">
+                            {canAccessChat && job.freelancer ? (
+                                <JobXmtpChat
+                                    currentUserAddress={address}
+                                    clientAddress={job.client}
+                                    freelancerAddress={job.freelancer}
+                                    jobStatus={job.status}
+                                    jobTitle={job.title}
+                                    jobAmount={formatUSDC(BigInt(job.amount))}
+                                />
+                            ) : (
+                                <div className="min-h-[560px] rounded-2xl border border-[#242535] bg-[#11121a] flex items-center justify-center px-6 text-center">
+                                    <div>
+                                        <MessageCircle className="w-10 h-10 text-[#666a84] mx-auto mb-3" />
+                                        <p className="text-[#f0f0f5] font-medium">Chat Not Available Yet</p>
+                                        <p className="text-sm text-[#8f90a6] mt-2">
+                                            Freelancer acceptance and client approval are required before this workspace becomes active.
+                                        </p>
+                                    </div>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </section>
                 </div>
             </div>
 
