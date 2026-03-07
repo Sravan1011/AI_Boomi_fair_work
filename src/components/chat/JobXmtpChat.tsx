@@ -36,6 +36,7 @@ function normalizeAddress(address: string): string {
     return address.toLowerCase();
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function extractMessageText(message: any): string {
     if (typeof message?.content === "string") return message.content;
     if (message?.content && typeof message?.content?.text === "string") return message.content.text;
@@ -352,11 +353,10 @@ export default function JobXmtpChat({
                                 {messages.map((message) => (
                                     <div key={message.id} className={`flex ${message.isMine ? "justify-end" : "justify-start"}`}>
                                         <div
-                                            className={`max-w-[78%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
-                                                message.isMine
+                                            className={`max-w-[78%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${message.isMine
                                                     ? "bg-[#3a5f52] text-[#e8fff3] rounded-br-md"
                                                     : "bg-[#1a1f2b] text-[#eef1ff] rounded-bl-md"
-                                            }`}
+                                                }`}
                                         >
                                             <p className="leading-relaxed break-words">{message.text}</p>
                                             <p className={`mt-1 text-[11px] text-right ${message.isMine ? "text-[#c7f3de]" : "text-[#9ea6c7]"}`}>

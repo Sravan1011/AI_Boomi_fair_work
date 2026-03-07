@@ -65,7 +65,7 @@ export default function HeroSection() {
                         <FadeInOnScroll delay={0.3}>
                             <div className="mt-12 flex flex-wrap gap-4">
                                 <Link
-                                    href="/jobs"
+                                    href="/register"
                                     className="inline-flex items-center gap-2 rounded-pill bg-white px-8 py-3.5 text-sm font-medium text-backdrop transition-all duration-300 hover:bg-white/90 hover:shadow-glow-sm"
                                 >
                                     Launch App

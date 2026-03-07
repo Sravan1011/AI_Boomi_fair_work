@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import JobCard from "@/components/jobs/JobCard";
+import JitsiMeetModal from "@/components/meet/JitsiMeetModal";
 import { supabase } from "@/lib/supabase";
-import { Plus, Search, Briefcase, ChevronDown, Code, Wallet, Shield, Cpu, Palette, FileCode } from "lucide-react";
+import { Plus, Search, Briefcase, ChevronDown, Code, Wallet, Shield, Cpu, Palette, FileCode, Video } from "lucide-react";
 import Link from "next/link";
+import { useAccount } from "wagmi";
 
 interface Job {
     id: string;
@@ -36,10 +38,17 @@ const filterOptions = [
 ];
 
 export default function JobsPage() {
+    const { address } = useAccount();
     const [jobs, setJobs] = useState<Job[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<"all" | "open" | "active">("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [meetRoom, setMeetRoom] = useState<string | null>(null);
+
+    const startTestMeet = () => {
+        const room = `fairwork-test-${Math.random().toString(36).slice(2, 8)}`;
+        setMeetRoom(room);
+    };
 
     useEffect(() => {
         fetchJobs();
@@ -88,9 +97,17 @@ export default function JobsPage() {
                             <h1 className="text-3xl font-light text-[#f0f0f5] mb-2">Web3 Development</h1>
                             <p className="text-[#8888a0]">Build decentralized apps with skilled Web3 developers</p>
                         </div>
-                        <Link href="/jobs/create" className="flex items-center gap-2 px-5 py-2.5 bg-[#6366f1] text-white rounded-xl text-sm font-medium hover:bg-[#5254cc] transition-all shadow-lg shadow-indigo-500/20 shrink-0">
-                            <Plus className="w-4 h-4" /> Post a Job
-                        </Link>
+                        <div className="flex items-center gap-3 shrink-0">
+                            <button
+                                onClick={startTestMeet}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#6366f1]/30 bg-[#6366f1]/10 text-[#a5b4fc] text-sm font-medium hover:bg-[#6366f1]/20 transition-all"
+                            >
+                                <Video className="w-4 h-4" /> Test Meet
+                            </button>
+                            <Link href="/jobs/create" className="flex items-center gap-2 px-5 py-2.5 bg-[#6366f1] text-white rounded-xl text-sm font-medium hover:bg-[#5254cc] transition-all shadow-lg shadow-indigo-500/20">
+                                <Plus className="w-4 h-4" /> Post a Job
+                            </Link>
+                        </div>
                     </div>
 
                     {/* Service Pills */}
@@ -189,6 +206,15 @@ export default function JobsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Jitsi Meet Modal (test) */}
+            {meetRoom && (
+                <JitsiMeetModal
+                    roomName={meetRoom}
+                    displayName={address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "FairWork User"}
+                    onClose={() => setMeetRoom(null)}
+                />
+            )}
         </div>
     );
 }

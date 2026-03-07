@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useAccount } from "wagmi";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import ProfileMenu from "./ProfileMenu";
 
 const navLinks = [
     { href: "/jobs", label: "Browse Jobs" },
@@ -14,6 +16,7 @@ const navLinks = [
 
 export default function Navbar() {
     const pathname = usePathname();
+    const { isConnected } = useAccount();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
 
@@ -57,14 +60,18 @@ export default function Navbar() {
                     ))}
                 </div>
 
-                {/* Right: Wallet + CTA */}
+                {/* Right: Wallet + Profile */}
                 <div className="flex items-center gap-3">
                     <div className="hidden md:block">
-                        <ConnectButton
-                            showBalance={false}
-                            accountStatus="avatar"
-                            chainStatus="icon"
-                        />
+                        {isConnected ? (
+                            <ProfileMenu />
+                        ) : (
+                            <ConnectButton
+                                showBalance={false}
+                                accountStatus="avatar"
+                                chainStatus="icon"
+                            />
+                        )}
                     </div>
                     <Link
                         href="/jobs/create"

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Navbar from "@/components/layout/Navbar";
 import {
     Search, Star,
@@ -10,11 +10,72 @@ import {
     Megaphone, Cpu, CheckCircle2, DollarSign, Grid3X3
 } from "lucide-react";
 
+// ─── Category SVG Icons ───────────────────────────────────────────────────────
+
+const WebDevIcon = () => (
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="8" width="36" height="24" rx="3" stroke="#6366f1" strokeWidth="1.8" />
+        <path d="M4 14h36" stroke="#6366f1" strokeWidth="1.8" />
+        <circle cx="9" cy="11" r="1.2" fill="#6366f1" />
+        <circle cx="13.5" cy="11" r="1.2" fill="#7c3aed" />
+        <circle cx="18" cy="11" r="1.2" fill="#818cf8" />
+        <path d="M14 20l-4 4 4 4" stroke="#818cf8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M20 20l4 4-4 4" stroke="#818cf8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M16 28l2.5-8" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M18 36h8" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M22 32v4" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+);
+
+const AIIcon = () => (
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="22" cy="22" r="7" stroke="#6366f1" strokeWidth="1.8" />
+        <circle cx="22" cy="22" r="2.5" fill="#6366f1" />
+        <circle cx="22" cy="8" r="2.5" stroke="#818cf8" strokeWidth="1.6" />
+        <circle cx="22" cy="36" r="2.5" stroke="#818cf8" strokeWidth="1.6" />
+        <circle cx="8" cy="22" r="2.5" stroke="#818cf8" strokeWidth="1.6" />
+        <circle cx="36" cy="22" r="2.5" stroke="#818cf8" strokeWidth="1.6" />
+        <circle cx="11.5" cy="11.5" r="2" stroke="#7c3aed" strokeWidth="1.4" />
+        <circle cx="32.5" cy="11.5" r="2" stroke="#7c3aed" strokeWidth="1.4" />
+        <circle cx="11.5" cy="32.5" r="2" stroke="#7c3aed" strokeWidth="1.4" />
+        <circle cx="32.5" cy="32.5" r="2" stroke="#7c3aed" strokeWidth="1.4" />
+        <line x1="22" y1="15" x2="22" y2="10.5" stroke="#818cf8" strokeWidth="1.4" />
+        <line x1="22" y1="29" x2="22" y2="33.5" stroke="#818cf8" strokeWidth="1.4" />
+        <line x1="15" y1="22" x2="10.5" y2="22" stroke="#818cf8" strokeWidth="1.4" />
+        <line x1="29" y1="22" x2="33.5" y2="22" stroke="#818cf8" strokeWidth="1.4" />
+        <line x1="16.9" y1="16.9" x2="13.6" y2="13.6" stroke="#7c3aed" strokeWidth="1.3" />
+        <line x1="27.1" y1="16.9" x2="30.4" y2="13.6" stroke="#7c3aed" strokeWidth="1.3" />
+        <line x1="16.9" y1="27.1" x2="13.6" y2="30.4" stroke="#7c3aed" strokeWidth="1.3" />
+        <line x1="27.1" y1="27.1" x2="30.4" y2="30.4" stroke="#7c3aed" strokeWidth="1.3" />
+    </svg>
+);
+
+const DesignIcon = () => (
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 36l6-6 18-18 6 6-18 18-6-6z" stroke="#6366f1" strokeWidth="1.8" strokeLinejoin="round" />
+        <path d="M26 14l4 4" stroke="#818cf8" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M8 36l-3 3 6-0.5L8 36z" fill="#7c3aed" stroke="#7c3aed" strokeWidth="1" strokeLinejoin="round" />
+        <circle cx="32" cy="10" r="4" stroke="#6366f1" strokeWidth="1.8" />
+        <path d="M32 7v2M32 11v2M29 10h2M33 10h2" stroke="#818cf8" strokeWidth="1.4" strokeLinecap="round" />
+        <path d="M14 28l2 2" stroke="#818cf8" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+);
+
+const MarketingIcon = () => (
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 30V20l10-8 16-6v28l-16-6-10-8z" stroke="#6366f1" strokeWidth="1.8" strokeLinejoin="round" />
+        <path d="M18 22h-4" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M14 22v8l4-2v-6" stroke="#6366f1" strokeWidth="1.8" strokeLinejoin="round" />
+        <path d="M34 18v8" stroke="#818cf8" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M37 16l3-3M37 28l3 3M40 22h-3" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+);
+
 const categories = [
-    { name: "Web Development", image: "/images/category-webdev.png", icon: Code },
-    { name: "AI Services", image: "/images/category-ai.png", icon: Cpu },
-    { name: "Graphic Design", image: "/images/category-design.png", icon: Palette },
-    { name: "Digital Marketing", image: "/images/category-marketing.png", icon: Megaphone },
+    { name: "Web Development", sub: "dApps · Smart Contracts · APIs", Icon: WebDevIcon, color: "rgba(99,102,241,0.12)", border: "rgba(99,102,241,0.25)", glow: "rgba(99,102,241,0.15)" },
+    { name: "AI Services", sub: "Agents · Automation · ML Models", Icon: AIIcon, color: "rgba(124,58,237,0.12)", border: "rgba(124,58,237,0.25)", glow: "rgba(124,58,237,0.15)" },
+    { name: "Graphic Design", sub: "UI/UX · Branding · NFT Art", Icon: DesignIcon, color: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.22)", glow: "rgba(129,140,248,0.12)" },
+    { name: "Digital Marketing", sub: "Web3 Growth · DAOs · Community", Icon: MarketingIcon, color: "rgba(99,102,241,0.1)", border: "rgba(99,102,241,0.2)", glow: "rgba(99,102,241,0.1)" },
 ];
 
 const features = [
@@ -32,13 +93,77 @@ const stats = [
 ];
 
 const testimonials = [
-    { quote: "Finally, a platform that doesn't take 20% of my earnings. The escrow system gives me peace of mind.", author: "Sarah Chen", role: "Full-Stack Developer", avatar: "👩‍💻" },
-    { quote: "The AI dispute resolution saved me weeks of back-and-forth. Fair and fast.", author: "Marcus Johnson", role: "UI/UX Designer", avatar: "👨‍🎨" },
-    { quote: "Web3 freelancing done right. Lower fees, better protection, transparent process.", author: "Elena Rodriguez", role: "Smart Contract Auditor", avatar: "👩‍🔬" },
+    {
+        quote: "I delivered a full DeFi dashboard — $4,800 USDC hit my wallet the moment the client approved. No chasing invoices, no 20% cut. FairWork is the only platform where I actually feel protected.",
+        author: "Sarah Chen",
+        role: "Full-Stack Developer",
+        initials: "SC",
+        gradient: "linear-gradient(135deg, #6366f1, #818cf8)",
+        metric: "$4,800 USDC",
+        metricLabel: "earned on first job",
+        tag: "DeFi · Next.js",
+        verified: true,
+    },
+    {
+        quote: "Client said the deliverable was 'incomplete' — it wasn't. I submitted my evidence, the AI analyzed both sides in minutes, and the jury resolved it in under 6 hours. First time I've won a dispute on any platform.",
+        author: "Marcus Johnson",
+        role: "UI/UX Designer",
+        initials: "MJ",
+        gradient: "linear-gradient(135deg, #7c3aed, #6366f1)",
+        metric: "6 hrs",
+        metricLabel: "dispute fully resolved",
+        tag: "UI/UX · Figma",
+        verified: true,
+    },
+    {
+        quote: "Audited three smart contracts through FairWork. Each job was escrowed upfront — I never worried about payment. The on-chain history also became part of my portfolio. Other platforms can't offer that.",
+        author: "Elena Rodriguez",
+        role: "Smart Contract Auditor",
+        initials: "ER",
+        gradient: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+        metric: "3 audits",
+        metricLabel: "all paid on-chain",
+        tag: "Solidity · Security",
+        verified: true,
+    },
 ];
 
 export default function HomePage() {
     const [searchQuery, setSearchQuery] = useState("");
+    const trustedRef = useRef<HTMLDivElement>(null);
+    const cardsRef = useRef<HTMLDivElement>(null);
+    const testimonialsRef = useRef<HTMLDivElement>(null);
+    const testimonialHeadRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        let cleanup: (() => void) | undefined;
+        import("gsap").then(({ gsap }) =>
+            import("gsap/ScrollTrigger").then(({ ScrollTrigger }) => {
+                gsap.registerPlugin(ScrollTrigger);
+                const ctx = gsap.context(() => {
+                    const st = { once: true, clearProps: "all" };
+
+                    if (trustedRef.current)
+                        gsap.from(trustedRef.current, { y: 20, opacity: 0, duration: 0.7, ease: "power3.out", clearProps: "all", scrollTrigger: { trigger: trustedRef.current, start: "top 95%", ...st } });
+
+                    if (cardsRef.current) {
+                        const cards = cardsRef.current.querySelectorAll(".cat-card");
+                        gsap.from(cards, { y: 36, opacity: 0, scale: 0.93, stagger: 0.1, duration: 0.6, ease: "power3.out", clearProps: "all", scrollTrigger: { trigger: cardsRef.current, start: "top 95%", ...st } });
+                    }
+
+                    if (testimonialHeadRef.current)
+                        gsap.from(testimonialHeadRef.current, { y: 24, opacity: 0, duration: 0.7, ease: "power3.out", clearProps: "all", scrollTrigger: { trigger: testimonialHeadRef.current, start: "top 95%", ...st } });
+
+                    if (testimonialsRef.current) {
+                        const tcards = testimonialsRef.current.querySelectorAll(".t-card");
+                        gsap.from(tcards, { y: 40, opacity: 0, scale: 0.95, stagger: 0.14, duration: 0.65, ease: "power3.out", clearProps: "all", scrollTrigger: { trigger: testimonialsRef.current, start: "top 95%", ...st } });
+                    }
+                });
+                cleanup = () => ctx.revert();
+            })
+        );
+        return () => cleanup?.();
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#050505] text-[#f0f0f5]">
@@ -110,18 +235,61 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* Categories */}
+            {/* Trusted Services */}
             <section className="py-20">
                 <div className="max-w-screen-xl mx-auto px-6">
-                    <h2 className="text-2xl md:text-3xl font-light text-[#f0f0f5] mb-10">Trusted Services</h2>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div ref={trustedRef} className="mb-12">
+                        <div className="inline-flex items-center gap-2 bg-[#6366f1]/10 border border-[#6366f1]/20 rounded-full px-4 py-1.5 mb-4">
+                            <span className="w-1.5 h-1.5 bg-[#6366f1] rounded-full" />
+                            <span className="text-[#818cf8] text-xs font-semibold tracking-widest uppercase">Services</span>
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-light text-[#f0f0f5]">Trusted Services</h2>
+                        <p className="text-[#8888a0] mt-2 text-sm">Top categories on FairWork, secured by on-chain escrow.</p>
+                    </div>
+
+                    <div ref={cardsRef} className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                         {categories.map((category) => (
                             <Link key={category.name} href="/jobs">
-                                <div className="group rounded-2xl border border-[#1a1a24] bg-[#111118]/60 p-6 hover:border-[#6366f1]/30 hover:shadow-lg hover:shadow-[#6366f1]/5 transition-all duration-300 text-center">
-                                    <div className="relative w-16 h-16 mx-auto mb-4">
-                                        <Image src={category.image} alt={category.name} fill className="object-contain" />
+                                <div
+                                    className="cat-card group relative rounded-2xl p-6 text-center overflow-hidden cursor-pointer transition-all duration-300"
+                                    style={{
+                                        background: category.color,
+                                        border: `1px solid ${category.border}`,
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        const el = e.currentTarget;
+                                        el.style.transform = "translateY(-4px)";
+                                        el.style.boxShadow = `0 16px 40px ${category.glow}`;
+                                        el.style.borderColor = category.border.replace("0.25", "0.5");
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        const el = e.currentTarget;
+                                        el.style.transform = "translateY(0)";
+                                        el.style.boxShadow = "none";
+                                        el.style.borderColor = category.border;
+                                    }}
+                                >
+                                    {/* Glow orb */}
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full blur-2xl opacity-40 transition-opacity duration-300 group-hover:opacity-70"
+                                        style={{ background: `radial-gradient(circle, ${category.border}, transparent)` }} />
+
+                                    {/* Icon */}
+                                    <div className="relative flex items-center justify-center w-16 h-16 mx-auto mb-5 rounded-2xl transition-transform duration-300 group-hover:scale-110"
+                                        style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${category.border}` }}>
+                                        <category.Icon />
                                     </div>
-                                    <h3 className="text-sm font-medium text-[#f0f0f5] group-hover:text-[#6366f1] transition-colors">{category.name}</h3>
+
+                                    <h3 className="text-sm font-semibold text-[#f0f0f5] mb-1.5 transition-colors duration-200 group-hover:text-white">
+                                        {category.name}
+                                    </h3>
+                                    <p className="text-[#555] text-xs leading-relaxed group-hover:text-[#8888a0] transition-colors duration-200">
+                                        {category.sub}
+                                    </p>
+
+                                    {/* Arrow */}
+                                    <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-1 group-hover:translate-x-0">
+                                        <ArrowRight className="w-3.5 h-3.5 text-[#818cf8]" />
+                                    </div>
                                 </div>
                             </Link>
                         ))}
@@ -226,22 +394,88 @@ export default function HomePage() {
             </section>
 
             {/* Testimonials */}
-            <section className="py-20 border-t border-[#1a1a24]">
+            <section className="py-24 border-t border-[#1a1a24]">
                 <div className="max-w-screen-xl mx-auto px-6">
-                    <h2 className="text-3xl md:text-4xl font-light text-[#f0f0f5] mb-12 text-center">What success on FairWork looks like</h2>
-                    <div className="grid md:grid-cols-3 gap-6">
+
+                    {/* Header */}
+                    <div ref={testimonialHeadRef} className="text-center mb-16">
+                        <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/20 rounded-full px-4 py-1.5 mb-5">
+                            <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
+                            <span className="text-amber-400 text-xs font-semibold tracking-widest uppercase">Real Stories</span>
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-light text-[#f0f0f5]">What success on FairWork looks like</h2>
+                        <p className="text-[#8888a0] mt-3 text-sm max-w-lg mx-auto">
+                            From first payment to dispute resolution — real outcomes from real freelancers.
+                        </p>
+                    </div>
+
+                    {/* Cards */}
+                    <div ref={testimonialsRef} className="grid md:grid-cols-3 gap-6">
                         {testimonials.map((t) => (
-                            <div key={t.author} className="rounded-2xl border border-[#1a1a24] bg-[#111118]/60 p-8 hover:border-[#6366f1]/20 transition-all">
-                                <div className="flex gap-1 mb-4">
-                                    {[1, 2, 3, 4, 5].map((s) => (
-                                        <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                                    ))}
+                            <div
+                                key={t.author}
+                                className="t-card group relative rounded-2xl p-7 flex flex-col gap-5 transition-all duration-300"
+                                style={{
+                                    background: "rgba(255,255,255,0.02)",
+                                    border: "1px solid rgba(255,255,255,0.07)",
+                                }}
+                                onMouseEnter={(e) => {
+                                    const el = e.currentTarget;
+                                    el.style.borderColor = "rgba(99,102,241,0.3)";
+                                    el.style.background = "rgba(99,102,241,0.04)";
+                                    el.style.transform = "translateY(-3px)";
+                                }}
+                                onMouseLeave={(e) => {
+                                    const el = e.currentTarget;
+                                    el.style.borderColor = "rgba(255,255,255,0.07)";
+                                    el.style.background = "rgba(255,255,255,0.02)";
+                                    el.style.transform = "translateY(0)";
+                                }}
+                            >
+                                {/* Top row: stars + metric badge */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex gap-0.5">
+                                        {[1,2,3,4,5].map((s) => (
+                                            <Star key={s} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                        ))}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full"
+                                        style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.22)" }}>
+                                        <span className="text-[#818cf8] font-bold text-xs">{t.metric}</span>
+                                        <span className="text-[#555] text-xs">{t.metricLabel}</span>
+                                    </div>
                                 </div>
-                                <p className="text-[#8888a0] mb-6 leading-relaxed text-sm">&quot;{t.quote}&quot;</p>
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-[#1a1a24] rounded-full flex items-center justify-center text-xl">{t.avatar}</div>
-                                    <div>
-                                        <div className="font-medium text-[#f0f0f5] text-sm">{t.author}</div>
+
+                                {/* Quote */}
+                                <div className="relative">
+                                    {/* Decorative quote mark */}
+                                    <div className="absolute -top-1 -left-1 text-[64px] leading-none text-[#6366f1] opacity-15 font-serif select-none">"</div>
+                                    <p className="text-[#a0a0b8] text-sm leading-relaxed relative z-10 pt-4">
+                                        {t.quote}
+                                    </p>
+                                </div>
+
+                                {/* Tag */}
+                                <div className="inline-flex self-start items-center gap-1.5 px-2.5 py-1 rounded-lg"
+                                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                                    <span className="text-[#555] text-xs font-mono">{t.tag}</span>
+                                </div>
+
+                                {/* Author */}
+                                <div className="flex items-center gap-3 pt-1 border-t border-[#1a1a24] mt-auto">
+                                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                                        style={{ background: t.gradient }}>
+                                        {t.initials}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-[#f0f0f5] text-sm">{t.author}</span>
+                                            {t.verified && (
+                                                <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
+                                                    <CheckCircle2 className="w-3 h-3" /> Verified
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="text-xs text-[#8888a0]">{t.role}</div>
                                     </div>
                                 </div>

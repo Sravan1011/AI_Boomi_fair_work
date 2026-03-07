@@ -61,7 +61,7 @@ export default function LandingNavbar() {
                     {/* Desktop CTA */}
                     <div className="hidden md:flex items-center gap-4">
                         <Link
-                            href="/jobs"
+                            href="/register"
                             className="inline-flex items-center gap-2 rounded-pill bg-white px-6 py-2.5 text-sm font-medium text-backdrop transition-all duration-300 hover:bg-white/90 hover:shadow-glow-sm"
                         >
                             Launch App
@@ -119,7 +119,7 @@ export default function LandingNavbar() {
                             </a>
                         ))}
                         <Link
-                            href="/jobs"
+                            href="/register"
                             className="inline-flex items-center gap-2 rounded-pill bg-white px-6 py-2.5 text-sm font-medium text-backdrop mt-2"
                         >
                             Launch App
