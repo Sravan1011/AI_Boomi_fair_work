@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Client, type DecodedMessage, type Dm, type Identifier, type Signer, type XmtpEnv } from "@xmtp/browser-sdk";
 import { hexToBytes } from "viem";
 import { useWalletClient } from "wagmi";
-import { Loader2, Send, MessageSquare, Users, Search, Paperclip, Smile, ShieldCheck, Mic, Trash2, Bold, Italic, Strikethrough, Link, List, ListOrdered, Code, Type, AtSign, Plus, LayoutList, ChevronDown, Hash } from "lucide-react";
+import { Loader2, Send, MessageSquare, Users, Search, Paperclip, Smile, ShieldCheck, Mic, Trash2, Bold, Italic, Strikethrough, Link, List, ListOrdered, Code, Type, AtSign, Plus, LayoutList, ChevronDown, Hash, Video } from "lucide-react";
+import JitsiMeetModal from "@/components/meet/JitsiMeetModal";
 
 type ChatMessage = {
     id: string;
@@ -40,8 +41,28 @@ function normalizeAddress(address: string): string {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function extractMessageText(message: any): string {
-    if (typeof message?.content === "string") return message.content;
-    if (message?.content && typeof message?.content?.text === "string") return message.content.text;
+    const content = message?.content;
+    // Plain string (most common)
+    if (typeof content === "string") return content;
+    // Object with .text field
+    if (content && typeof content?.text === "string") return content.text;
+    // Raw bytes — XMTP v4 sometimes returns Uint8Array when codec isn't registered
+    if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
+        try {
+            const bytes = content instanceof Uint8Array ? content : new Uint8Array(content);
+            return new TextDecoder().decode(bytes);
+        } catch {
+            return "[Binary message]";
+        }
+    }
+    // contentBytes fallback (older SDK versions)
+    if (message?.contentBytes instanceof Uint8Array) {
+        try {
+            return new TextDecoder().decode(message.contentBytes);
+        } catch {
+            return "[Binary message]";
+        }
+    }
     return "[Unsupported message type]";
 }
 
@@ -71,6 +92,9 @@ export default function JobXmtpChat({
     const [isSending, setIsSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [statusHint, setStatusHint] = useState<string | null>(null);
+
+    const [meetOpen, setMeetOpen] = useState(false);
+    const meetRoomName = `fairwork-${normalizeAddress(clientAddress).slice(2, 8)}-${normalizeAddress(freelancerAddress).slice(2, 8)}`;
 
     const [isRecording, setIsRecording] = useState(false);
     const [recordingDuration, setRecordingDuration] = useState(0);
@@ -172,9 +196,16 @@ export default function JobXmtpChat({
             xmtpClientRef.current = null;
         }
 
+        // Use a stable encryption key derived from the wallet address so the
+        // local XMTP database persists across hot-reloads and re-mounts.
+        const dbKey = new Uint8Array(32);
+        const addrBytes = new TextEncoder().encode(walletClient.account!.address.toLowerCase());
+        dbKey.set(addrBytes.slice(0, 32));
+
         const createdClient = await Client.create(signer, {
             env: XMTP_ENV,
             appVersion: "fairwork-chat/1.0.0",
+            dbEncryptionKey: dbKey,
         });
         xmtpClientRef.current = createdClient;
 
@@ -452,7 +483,7 @@ export default function JobXmtpChat({
                         <span className="font-bold text-[15px] text-[#f2f3f5]"># general</span>
                         <ChevronDown className="w-3.5 h-3.5 text-[#8a8e94] opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                    <div className="flex items-center gap-3 text-[#8a8e94]">
+                    <div className="flex items-center gap-2 text-[#8a8e94]">
                         <div className="relative group/search hidden sm:block">
                             <div className="absolute flex items-center justify-center w-7 h-full left-0 pl-1">
                                 <Search className="w-3.5 h-3.5 text-[#5c5f73]" />
@@ -463,6 +494,17 @@ export default function JobXmtpChat({
                                 className="w-[180px] h-7 bg-[#0b0c0f] border border-[#2a2f3d] rounded pl-7 pr-2 text-xs text-[#f2f3f5] focus:outline-none focus:border-[#4b4e60] focus:ring-1 focus:ring-[#4b4e60] transition-all"
                             />
                         </div>
+
+                        {/* Meet button */}
+                        <button
+                            onClick={() => setMeetOpen(true)}
+                            title="Start video meeting"
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#6366f1]/15 border border-[#6366f1]/30 text-[#a5b4fc] hover:bg-[#6366f1]/25 transition-all text-[11px] font-medium whitespace-nowrap"
+                        >
+                            <Video className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Meet</span>
+                        </button>
+
                         <div className="px-2 py-1 rounded text-[11px] font-medium border border-[#2a2f3d] bg-[#0b0c0f] flex items-center gap-1.5 whitespace-nowrap">
                             <div className={`w-1.5 h-1.5 rounded-full ${isRefreshing ? 'bg-amber-400 animate-pulse' : 'bg-[#23a559]'}`} />
                             <span className="hidden sm:inline">XMTP</span> {XMTP_ENV.toUpperCase()}
@@ -612,6 +654,15 @@ export default function JobXmtpChat({
                     {error && <p className="text-xs text-red-400 mt-2 ml-1">{error}</p>}
                 </div>
             </section>
+
+            {/* Jitsi Meet Modal */}
+            {meetOpen && (
+                <JitsiMeetModal
+                    roomName={meetRoomName}
+                    displayName={currentUserAddress ? `${currentUserAddress.slice(0, 6)}…${currentUserAddress.slice(-4)}` : "FairWork User"}
+                    onClose={() => setMeetOpen(false)}
+                />
+            )}
         </div>
     );
 }
