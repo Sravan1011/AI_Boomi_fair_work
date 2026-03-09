@@ -5,6 +5,7 @@ import FadeInOnScroll from "../FadeInOnScroll";
 import Container from "../Container";
 import GlowOrb from "../GlowOrb";
 import CinematicImage from "../CinematicImage";
+import HeroImage3D from "../HeroImage3D";
 
 export default function HeroSection() {
     return (
@@ -108,55 +109,10 @@ export default function HeroSection() {
 
                     {/* RIGHT — Hero abstract image */}
                     <FadeInOnScroll direction="right" delay={0.2}>
-                        <div className="relative">
-                            {/* 4-directional feathered mask — fades all edges into background */}
-                            <div
-                                style={{
-                                    WebkitMaskImage: [
-                                        "linear-gradient(to right,  transparent 0%, black 18%, black 82%, transparent 100%)",
-                                        "linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)",
-                                    ].join(", "),
-                                    WebkitMaskComposite: "source-in",
-                                    maskImage: [
-                                        "linear-gradient(to right,  transparent 0%, black 18%, black 82%, transparent 100%)",
-                                        "linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)",
-                                    ].join(", "),
-                                    maskComposite: "intersect",
-                                }}
-                            >
-                                <CinematicImage
-                                    src="/assets/hero/hero-abstract.png"
-                                    alt="FairWork decentralized protocol network"
-                                    width={640}
-                                    height={640}
-                                    className="w-full !rounded-none"
-                                    priority
-                                />
-                            </div>
-
-                            {/* Floating stat card */}
-                            <div className="absolute -bottom-4 -left-4 md:-left-8 rounded-2xl border border-surface-border bg-surface-elevated/90 backdrop-blur-xl p-4 shadow-glow-sm">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-9 w-9 rounded-xl bg-accent-indigo/20 flex items-center justify-center">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="#6366f1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-medium text-text-primary">Escrow Protected</p>
-                                        <p className="text-xs text-text-muted">USDC · Smart Contract</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Floating network badge */}
-                            <div className="absolute -top-4 -right-4 md:-right-6 rounded-2xl border border-surface-border bg-surface-elevated/90 backdrop-blur-xl px-4 py-3 shadow-glow-sm">
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                                    <p className="text-xs text-text-primary font-medium">Live on Polygon</p>
-                                </div>
-                            </div>
-                        </div>
+                        <HeroImage3D
+                            src="/assets/hero/Stylized 3D Bitcoin Symbol.png"
+                            alt="Professional 3D floating illustration for FairWork"
+                        />
                     </FadeInOnScroll>
 
                 </div>
