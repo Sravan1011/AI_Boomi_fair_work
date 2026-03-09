@@ -6,8 +6,8 @@ import { useState, useEffect, useRef } from "react";
 import Navbar from "@/components/layout/Navbar";
 import {
     Search, Star,
-    ArrowRight, Briefcase, Zap, Lock, Clock, Code, Palette,
-    Megaphone, Cpu, CheckCircle2, DollarSign, Grid3X3
+    ArrowRight, Briefcase, Zap, Lock, Clock,
+    CheckCircle2, DollarSign, Grid3X3
 } from "lucide-react";
 
 // ─── Category SVG Icons ───────────────────────────────────────────────────────
@@ -405,7 +405,7 @@ export default function HomePage() {
                         </div>
                         <h2 className="text-3xl md:text-4xl font-light text-[#f0f0f5]">What success on FairWork looks like</h2>
                         <p className="text-[#8888a0] mt-3 text-sm max-w-lg mx-auto">
-                            From first payment to dispute resolution — real outcomes from real freelancers.
+                            &quot;Hey team, getting close on the dashboard implementation. Just pushed the latest commits for the analytics charts. Have a look when you get a chance!&quot;
                         </p>
                     </div>
 
@@ -435,7 +435,7 @@ export default function HomePage() {
                                 {/* Top row: stars + metric badge */}
                                 <div className="flex items-center justify-between">
                                     <div className="flex gap-0.5">
-                                        {[1,2,3,4,5].map((s) => (
+                                        {[1, 2, 3, 4, 5].map((s) => (
                                             <Star key={s} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                                         ))}
                                     </div>
@@ -449,7 +449,7 @@ export default function HomePage() {
                                 {/* Quote */}
                                 <div className="relative">
                                     {/* Decorative quote mark */}
-                                    <div className="absolute -top-1 -left-1 text-[64px] leading-none text-[#6366f1] opacity-15 font-serif select-none">"</div>
+                                    <div className="absolute -top-1 -left-1 text-[64px] leading-none text-[#6366f1] opacity-15 font-serif select-none">&quot;</div>
                                     <p className="text-[#a0a0b8] text-sm leading-relaxed relative z-10 pt-4">
                                         {t.quote}
                                     </p>

@@ -4,7 +4,6 @@ import Link from "next/link";
 import FadeInOnScroll from "../FadeInOnScroll";
 import Container from "../Container";
 import GlowOrb from "../GlowOrb";
-import CinematicImage from "../CinematicImage";
 import HeroImage3D from "../HeroImage3D";
 
 export default function HeroSection() {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAccount, useDisconnect } from "wagmi";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 import { User, LayoutDashboard, Settings, LogOut, ChevronDown } from "lucide-react";
 
 type Profile = {
@@ -74,8 +75,10 @@ export default function ProfileMenu() {
             >
                 {/* Avatar circle */}
                 {profile?.avatar_url ? (
-                    <img
+                    <Image
                         src={profile.avatar_url}
+                        width={30}
+                        height={30}
                         alt={displayName}
                         style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover" }}
                     />

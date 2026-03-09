@@ -240,7 +240,7 @@ export default function RegisterPage() {
                                 ].map((opt) => (
                                     <button
                                         key={opt.value}
-                                        onClick={() => setForm((f) => ({ ...f, role: opt.value as any }))}
+                                        onClick={() => setForm((f) => ({ ...f, role: opt.value as "client" | "freelancer" | "both" }))}
                                         style={{
                                             display: "flex", alignItems: "flex-start", gap: 16,
                                             padding: "18px 20px", borderRadius: 14, textAlign: "left",
@@ -375,7 +375,7 @@ export default function RegisterPage() {
                                     <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#8888a0", marginBottom: 10, letterSpacing: "0.04em", display: "block" }}>Experience Level</label>
                                     <div style={{ display: "flex", gap: 10 }}>
                                         {EXPERIENCE_LEVELS.map((lvl) => (
-                                            <button key={lvl.value} onClick={() => setForm((f) => ({ ...f, experience_level: lvl.value as any }))}
+                                            <button key={lvl.value} onClick={() => setForm((f) => ({ ...f, experience_level: lvl.value as "entry" | "intermediate" | "expert" }))}
                                                 style={{
                                                     flex: 1, padding: "12px 8px", borderRadius: 10, textAlign: "center",
                                                     border: form.experience_level === lvl.value ? "1.5px solid #6366f1" : "1.5px solid rgba(255,255,255,0.07)",

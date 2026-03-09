@@ -7,6 +7,7 @@ import { useAccount } from "wagmi";
 import { supabase } from "@/lib/supabase";
 import Navbar from "@/components/layout/Navbar";
 import LandingFooter from "@/components/landing/LandingFooter";
+import Image from "next/image";
 import {
     Star, Globe, Twitter, Github, Edit3, Briefcase,
     Award, MapPin, Calendar, ExternalLink, CheckCircle2,
@@ -239,7 +240,7 @@ export default function ProfilePage() {
                     <div style={{ display: "flex", alignItems: "flex-end", gap: 28, flexWrap: "wrap", marginBottom: 36 }}>
                         <div ref={avatarRef} style={{ position: "relative", flexShrink: 0 }}>
                             {profile?.avatar_url ? (
-                                <img src={profile.avatar_url} alt={displayName} style={{ width: 120, height: 120, borderRadius: "50%", objectFit: "cover", border: "4px solid rgba(99,102,241,0.45)", boxShadow: "0 0 40px rgba(99,102,241,0.3)" }} />
+                                <Image src={profile.avatar_url!} width={120} height={120} alt={displayName} style={{ width: 120, height: 120, borderRadius: "50%", objectFit: "cover", border: "4px solid rgba(99,102,241,0.45)", boxShadow: "0 0 40px rgba(99,102,241,0.3)" }} />
                             ) : (
                                 <div style={{ width: 120, height: 120, borderRadius: "50%", background: "linear-gradient(135deg,#6366f1,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.8rem", fontWeight: 800, color: "#fff", border: "4px solid rgba(99,102,241,0.45)", boxShadow: "0 0 40px rgba(99,102,241,0.3)", fontFamily: "Space Grotesk,sans-serif" }}>
                                     {initials}
@@ -431,7 +432,7 @@ export default function ProfilePage() {
                                                 <span style={{ fontSize: "0.68rem", color: "#555" }}>{new Date(r.created_at).toLocaleDateString()}</span>
                                             </div>
                                         </div>
-                                        {r.comment && <p style={{ fontSize: "0.85rem", color: "#9090a8", lineHeight: 1.65, fontStyle: "italic", margin: 0 }}>"{r.comment}"</p>}
+                                        {r.comment && <p style={{ fontSize: "0.85rem", color: "#9090a8", lineHeight: 1.65, fontStyle: "italic", margin: 0 }}>&quot;{r.comment}&quot;</p>}
                                     </div>
                                 ))}
                             </div>

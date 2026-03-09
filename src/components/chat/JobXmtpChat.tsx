@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Client, type DecodedMessage, type Dm, type Identifier, type Signer, type XmtpEnv } from "@xmtp/browser-sdk";
 import { hexToBytes } from "viem";
 import { useWalletClient } from "wagmi";
-import { Loader2, Send, MessageSquare, Users, Search, Paperclip, Smile, ShieldCheck, Mic, Trash2, Bold, Italic, Strikethrough, Link, List, ListOrdered, Code, Type, AtSign, Plus, LayoutList, ChevronDown, Hash, Video } from "lucide-react";
+import { Loader2, Send, Search, Paperclip, Smile, ShieldCheck, Mic, Trash2, Bold, Italic, Strikethrough, Link, List, ListOrdered, Code, Type, AtSign, Plus, LayoutList, ChevronDown, Hash, Video } from "lucide-react";
 import JitsiMeetModal from "@/components/meet/JitsiMeetModal";
 
 type ChatMessage = {
