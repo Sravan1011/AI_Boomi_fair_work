@@ -127,6 +127,40 @@ export type Database = {
                 Insert: Omit<Database["public"]["Tables"]["jurors"]["Row"], "id" | "selected_at">;
                 Update: Partial<Database["public"]["Tables"]["jurors"]["Insert"]>;
             };
+            meet_recordings: {
+                Row: {
+                    id: string;
+                    job_id: string | null;
+                    room_name: string;
+                    jaas_session_id: string | null;
+                    ipfs_cid: string | null;
+                    transcript: string | null;
+                    duration_seconds: number | null;
+                    recorded_by: string | null;
+                    created_at: string;
+                };
+                Insert: Omit<Database["public"]["Tables"]["meet_recordings"]["Row"], "id" | "created_at">;
+                Update: Partial<Database["public"]["Tables"]["meet_recordings"]["Insert"]>;
+            };
+            legal_reports: {
+                Row: {
+                    id: string;
+                    dispute_id: string;
+                    report_text: string;
+                    report_ipfs: string | null;
+                    evidence_summary: {
+                        messages_count: number;
+                        voice_count: number;
+                        meet_transcript: boolean;
+                        ipfs_files_count: number;
+                    } | null;
+                    recommendation: "CLIENT" | "FREELANCER" | "NEUTRAL";
+                    confidence: number;
+                    generated_at: string;
+                };
+                Insert: Omit<Database["public"]["Tables"]["legal_reports"]["Row"], "id" | "generated_at">;
+                Update: Partial<Database["public"]["Tables"]["legal_reports"]["Insert"]>;
+            };
         };
     };
 };

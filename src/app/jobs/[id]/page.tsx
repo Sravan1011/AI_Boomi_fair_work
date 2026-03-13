@@ -681,6 +681,7 @@ export default function JobDetailsPage() {
                                     jobStatus={job.status}
                                     jobTitle={job.title}
                                     jobAmount={formatUSDC(BigInt(job.amount))}
+                                    jobId={job.id}
                                 />
                             ) : (
                                 <div className="min-h-[560px] rounded-2xl border border-[#242535] bg-[#11121a] flex items-center justify-center px-6 text-center">

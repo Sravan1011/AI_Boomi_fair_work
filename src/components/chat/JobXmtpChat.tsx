@@ -23,6 +23,7 @@ type JobXmtpChatProps = {
     jobStatus: string;
     jobTitle?: string;
     jobAmount?: string;
+    jobId?: string;
 };
 
 const CHAT_ENABLED_STATUSES = new Set([
@@ -79,6 +80,7 @@ export default function JobXmtpChat({
     jobStatus,
     jobTitle,
     jobAmount,
+    jobId,
 }: JobXmtpChatProps) {
     const { data: walletClient } = useWalletClient();
     const xmtpClientRef = useRef<Client | null>(null);
@@ -660,6 +662,9 @@ export default function JobXmtpChat({
                 <JitsiMeetModal
                     roomName={meetRoomName}
                     displayName={currentUserAddress ? `${currentUserAddress.slice(0, 6)}…${currentUserAddress.slice(-4)}` : "FairWork User"}
+                    jobId={jobId}
+                    walletAddress={currentUserAddress}
+                    isModerator={normalizedCurrent === normalizedClient}
                     onClose={() => setMeetOpen(false)}
                 />
             )}
