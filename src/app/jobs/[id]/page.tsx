@@ -464,9 +464,9 @@ export default function JobDetailsPage() {
         <div className="min-h-screen bg-[#050505]">
             <Navbar />
 
-            <div className="max-w-[1500px] mx-auto px-4 md:px-6 py-6">
-                <div className="grid lg:grid-cols-[360px_1fr] gap-5 items-start">
-                    <aside className="rounded-2xl border border-[#1a1a24] bg-[#0d0d12] overflow-hidden lg:sticky lg:top-24">
+            <div className="w-full px-0 py-0">
+                <div className="grid lg:grid-cols-[320px_1fr] gap-0 items-start">
+                    <aside className="border-r border-[#1a1a24] bg-[#0d0d12] overflow-hidden lg:sticky lg:top-0 h-[calc(100vh-64px)]">
                         <div className="px-5 py-4 border-b border-[#1a1a24] bg-[#101119]">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
@@ -663,7 +663,7 @@ export default function JobDetailsPage() {
                         </div>
                     </aside>
 
-                    <section ref={chatSectionRef} className="rounded-2xl border border-[#1a1a24] bg-[#0d0d12] overflow-hidden min-h-[760px]">
+                    <section ref={chatSectionRef} className="border-l border-[#1a1a24] bg-[#0d0d12] overflow-hidden h-[calc(100vh-64px)]">
                         <div className="px-5 py-4 border-b border-[#1a1a24] bg-[#101119]">
                             <p className="text-[11px] uppercase tracking-widest text-[#82839a]">Collaboration</p>
                             <h2 className="text-lg font-semibold text-[#f0f0f5] mt-1">Client-Freelancer Chat Room</h2>
@@ -672,7 +672,7 @@ export default function JobDetailsPage() {
                             </p>
                         </div>
 
-                        <div className="p-4 md:p-5">
+                        <div className="h-[calc(100%-80px)]">
                             {canAccessChat && job.freelancer ? (
                                 <JobXmtpChat
                                     currentUserAddress={address}
@@ -684,7 +684,7 @@ export default function JobDetailsPage() {
                                     jobId={job.id}
                                 />
                             ) : (
-                                <div className="min-h-[560px] rounded-2xl border border-[#242535] bg-[#11121a] flex items-center justify-center px-6 text-center">
+                                <div className="h-full flex items-center justify-center px-6 text-center">
                                     <div>
                                         <MessageCircle className="w-10 h-10 text-[#666a84] mx-auto mb-3" />
                                         <p className="text-[#f0f0f5] font-medium">Chat Not Available Yet</p>
