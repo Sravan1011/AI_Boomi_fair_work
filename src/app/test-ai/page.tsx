@@ -3,21 +3,22 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/layout/Navbar";
 import AIAnalysisReport from "@/components/disputes/AIAnalysisReport";
 import { AIAnalysis } from "@/types/dispute";
 import {
     Brain, ArrowRight, ArrowLeft, Play, CheckCircle,
-    Users, Briefcase, Zap
+    Users, Briefcase, Zap, ChevronDown, ChevronUp,
+    ShoppingCart, Palette, PenLine, AlertTriangle
 } from "lucide-react";
 
-// Test scenarios data
 const testScenarios = [
     {
         id: 1,
         name: "E-commerce Website",
-        icon: "🛒",
-        description: "Missing critical features - Payment & Admin panel",
+        icon: ShoppingCart,
+        description: "Missing critical features — Payment & Admin panel",
         expectedResult: "CLIENT",
         confidence: "~75%",
         jobDescription: `Build a responsive e-commerce website with the following features:
@@ -56,8 +57,8 @@ I spent 80+ hours on this project. The core e-commerce functionality is there. R
     {
         id: 2,
         name: "Logo Design",
-        icon: "🎨",
-        description: "Subjective style dispute - All requirements met",
+        icon: Palette,
+        description: "Subjective style dispute — All requirements met",
         expectedResult: "FREELANCER",
         confidence: "~80%",
         jobDescription: `Design a modern logo for tech startup "CloudSync"
@@ -83,7 +84,7 @@ The client never provided style preferences or examples. I asked twice via messa
     {
         id: 3,
         name: "Blog Writing",
-        icon: "✍️",
+        icon: PenLine,
         description: "Quality and originality dispute",
         expectedResult: "NEUTRAL",
         confidence: "~65%",
@@ -104,6 +105,19 @@ I can provide Copyscape reports proving zero plagiarism. The client is making ba
     },
 ];
 
+const resultColors: Record<string, string> = {
+    CLIENT: "bg-red-500/10 text-red-400 border border-red-500/20",
+    FREELANCER: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+    NEUTRAL: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+};
+
+const stats = [
+    { value: "3", label: "Test Scenarios" },
+    { value: "<10s", label: "Analysis Time" },
+    { value: "85%", label: "Avg Confidence" },
+    { value: "Free", label: "No USDC Needed" },
+];
+
 export default function TestAIPage() {
     const [selectedScenario, setSelectedScenario] = useState(testScenarios[0]);
     const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
@@ -115,7 +129,6 @@ export default function TestAIPage() {
         setLoading(true);
         setError(null);
         setAnalysis(null);
-
         try {
             const response = await fetch("/api/ai/analyze", {
                 method: "POST",
@@ -127,14 +140,9 @@ export default function TestAIPage() {
                     freelancerEvidence: selectedScenario.freelancerEvidence,
                 }),
             });
-
             const data = await response.json();
-
-            if (data.success) {
-                setAnalysis(data.analysis);
-            } else {
-                setError(data.error || "Analysis failed");
-            }
+            if (data.success) setAnalysis(data.analysis);
+            else setError(data.error || "Analysis failed");
         } catch {
             setError("Failed to connect to AI service");
         } finally {
@@ -142,335 +150,340 @@ export default function TestAIPage() {
         }
     };
 
+    const SelectedIcon = selectedScenario.icon;
+
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-backdrop text-text-primary">
             <Navbar />
 
-            {/* Hero Section - Matching Homepage */}
+            {/* Hero */}
             <section className="relative overflow-hidden">
-                {/* Background with gradient overlay - same as homepage */}
                 <div className="absolute inset-0 z-0">
-                    <Image
-                        src="/images/hero.png"
-                        alt="AI Dispute Resolution"
-                        fill
-                        className="object-cover"
-                        priority
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#003912]/95 via-[#003912]/80 to-transparent" />
+                    <Image src="/images/hero.png" alt="AI Dispute Resolution" fill className="object-cover opacity-25" priority />
+                    <div className="absolute inset-0 bg-gradient-to-r from-backdrop/95 via-backdrop/70 to-transparent" />
                 </div>
 
-                <div className="relative z-10 container-custom py-20 lg:py-28">
-                    <div className="max-w-2xl">
-                        {/* Badge */}
-                        <div className="animate-fade-in inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 mb-6">
-                            <Brain className="w-4 h-4 text-green-400" />
-                            <span className="text-white/90 text-sm font-medium">AI Demo • No USDC Required</span>
+                <div className="relative z-10 max-w-[1600px] mx-auto px-6 py-24 lg:py-36">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                        className="max-w-2xl"
+                    >
+                        <div className="inline-flex items-center gap-2 bg-accent-indigo/10 border border-accent-indigo/20 rounded-full px-4 py-2 mb-6">
+                            <Brain className="w-4 h-4 text-accent-indigo" />
+                            <span className="text-text-primary/80 text-sm font-medium">AI Demo · No USDC Required</span>
                         </div>
 
-                        {/* Main Headline */}
-                        <h1 className="animate-fade-in-up text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6 leading-[1.1]">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-light font-bold text-text-primary mb-6 leading-[1.1]">
                             Experience{" "}
-                            <span className="text-gradient">AI-Powered</span>{" "}
+                            <span className="bg-gradient-to-r from-accent-indigo to-accent-violet bg-clip-text text-transparent">
+                                AI-Powered
+                            </span>{" "}
                             Dispute Resolution
                         </h1>
 
-                        <p className="animate-fade-in-up animate-fade-in-delay-1 text-lg md:text-xl text-gray-200 mb-8 leading-relaxed">
+                        <p className="text-lg text-text-muted mb-8 leading-relaxed">
                             Test our intelligent dispute analysis with realistic scenarios.
                             See how AI provides fair, objective recommendations.
                         </p>
 
-                        {/* CTA Buttons */}
-                        <div className="animate-fade-in-up animate-fade-in-delay-2 flex flex-wrap gap-4">
+                        <div className="flex flex-wrap gap-4 mb-8">
                             <button
                                 onClick={() => document.getElementById("scenarios")?.scrollIntoView({ behavior: "smooth" })}
-                                className="btn-primary flex items-center gap-2"
+                                className="flex items-center gap-2 px-6 py-3 bg-accent-indigo text-white rounded-xl text-sm font-medium hover:bg-accent-indigo/90 transition-all shadow-glow-sm"
                             >
-                                <Play className="w-5 h-5" />
-                                Try Demo Now
+                                <Play className="w-4 h-4" /> Try Demo Now
                             </button>
-                            <Link href="/disputes" className="btn-outline !border-white/30 !text-white hover:!bg-white/10 flex items-center gap-2">
-                                <ArrowLeft className="w-4 h-4" />
-                                View Disputes
+                            <Link href="/disputes"
+                                className="flex items-center gap-2 px-6 py-3 border border-surface-border text-text-muted rounded-xl text-sm font-medium hover:border-accent-indigo/30 hover:text-text-primary transition-all">
+                                <ArrowLeft className="w-4 h-4" /> View Disputes
                             </Link>
                         </div>
 
-                        {/* Tags - Same style as homepage */}
-                        <div className="animate-fade-in-up animate-fade-in-delay-3 flex flex-wrap items-center gap-3 mt-8">
-                            <span className="text-gray-400 text-sm">Features:</span>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <span className="text-text-muted text-sm">Features:</span>
                             {["GPT-4 Analysis", "Instant Results", "Free Demo"].map((tag) => (
-                                <span
-                                    key={tag}
-                                    className="px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-sm text-white"
-                                >
+                                <span key={tag} className="px-4 py-1.5 bg-surface-elevated border border-surface-border rounded-full text-sm text-text-muted">
                                     {tag}
                                 </span>
                             ))}
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
 
-                {/* Bottom fade - same as homepage */}
-                <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent z-10" />
+                <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-backdrop to-transparent z-10" />
             </section>
 
-            {/* Stats Section - Matching Homepage */}
-            <section className="py-10 bg-white">
-                <div className="container-custom">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                        {[
-                            { value: "3", label: "Test Scenarios" },
-                            { value: "<10s", label: "Analysis Time" },
-                            { value: "85%", label: "Avg Confidence" },
-                            { value: "Free", label: "No USDC Needed" },
-                        ].map((stat) => (
-                            <div key={stat.label} className="text-center">
-                                <div className="text-3xl md:text-4xl font-bold text-gradient mb-1">
+            {/* Stats */}
+            <section className="border-y border-surface-border py-8">
+                <div className="max-w-[1600px] mx-auto px-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                        {stats.map((stat) => (
+                            <div key={stat.label}>
+                                <div className="text-3xl font-light bg-gradient-to-r from-accent-indigo to-accent-violet bg-clip-text text-transparent mb-1">
                                     {stat.value}
                                 </div>
-                                <div className="text-gray-500 text-sm">
-                                    {stat.label}
-                                </div>
+                                <div className="text-text-muted text-sm">{stat.label}</div>
                             </div>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* Scenarios Section - Clean White */}
-            <section id="scenarios" className="py-16 bg-white border-t border-gray-100">
-                <div className="container-custom">
-                    {/* Section Header */}
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            {/* Scenarios */}
+            <section id="scenarios" className="py-16 border-t border-surface-border">
+                <div className="max-w-[1600px] mx-auto px-6">
+                    <motion.div
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="text-center mb-12"
+                    >
+                        <h2 className="text-3xl md:text-4xl font-light font-bold text-text-primary mb-4">
                             Choose a Test Scenario
                         </h2>
-                        <p className="text-gray-600 max-w-2xl mx-auto">
+                        <p className="text-text-muted max-w-2xl mx-auto">
                             Select from realistic dispute scenarios to see how our AI provides fair, detailed analysis
                         </p>
-                    </div>
+                    </motion.div>
 
-                    {/* Scenario Cards - Minimal style like homepage categories */}
-                    <div className="grid md:grid-cols-3 gap-6 mb-12">
-                        {testScenarios.map((scenario) => (
-                            <button
+                    {/* Scenario Cards */}
+                    <div className="grid md:grid-cols-3 gap-6 mb-10">
+                        {testScenarios.map((scenario, i) => {
+                            const ScenarioIcon = scenario.icon;
+                            return (
+                            <motion.button
                                 key={scenario.id}
-                                onClick={() => {
-                                    setSelectedScenario(scenario);
-                                    setAnalysis(null);
-                                    setError(null);
-                                    setShowDetails(false);
-                                }}
-                                className={`minimal-card group text-left ${selectedScenario.id === scenario.id
-                                    ? "!border-[#6B5DD3] !shadow-lg !shadow-purple-100"
-                                    : ""
-                                    }`}
+                                initial={{ opacity: 0, y: 14 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.35, delay: i * 0.07, ease: "easeOut" }}
+                                onClick={() => { setSelectedScenario(scenario); setAnalysis(null); setError(null); setShowDetails(false); }}
+                                className={`group text-left p-6 rounded-2xl border transition-all duration-300 ${
+                                    selectedScenario.id === scenario.id
+                                        ? "border-accent-indigo bg-accent-indigo/8 shadow-glow-sm"
+                                        : "border-surface-border bg-surface-elevated/60 hover:border-accent-indigo/30 hover:shadow-card-hover"
+                                }`}
                             >
-                                <div className="text-4xl mb-4">{scenario.icon}</div>
-                                <h3 className={`font-semibold mb-2 transition-colors ${selectedScenario.id === scenario.id
-                                    ? "text-[#6B5DD3]"
-                                    : "text-gray-900 group-hover:text-[#6B5DD3]"
-                                    }`}>
+                                <div className="mb-4 w-10 h-10 rounded-xl bg-accent-indigo/10 flex items-center justify-center">
+                                    <ScenarioIcon className="w-5 h-5 text-accent-indigo" />
+                                </div>
+                                <h3 className={`font-semibold font-bold mb-2 transition-colors ${
+                                    selectedScenario.id === scenario.id ? "text-accent-indigo" : "text-text-primary group-hover:text-accent-indigo"
+                                }`}>
                                     {scenario.name}
                                 </h3>
-                                <p className="text-gray-500 text-sm mb-4">{scenario.description}</p>
+                                <p className="text-text-muted text-sm mb-4">{scenario.description}</p>
                                 <div className="flex items-center gap-2">
-                                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${scenario.expectedResult === "CLIENT"
-                                        ? "bg-red-100 text-red-700"
-                                        : scenario.expectedResult === "FREELANCER"
-                                            ? "bg-green-100 text-green-700"
-                                            : "bg-yellow-100 text-yellow-700"
-                                        }`}>
+                                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${resultColors[scenario.expectedResult]}`}>
                                         {scenario.expectedResult}
                                     </span>
-                                    <span className="text-xs text-gray-400">{scenario.confidence}</span>
+                                    <span className="text-xs text-text-subtle">{scenario.confidence}</span>
                                 </div>
-                            </button>
-                        ))}
+                            </motion.button>
+                        ); })}
                     </div>
 
                     {/* Selected Scenario Panel */}
-                    <div className="bg-gray-50 rounded-3xl p-8 md:p-10 mb-8">
+                    <motion.div
+                        key={selectedScenario.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="rounded-2xl border border-surface-border bg-surface-elevated/60 p-8 md:p-10 mb-8"
+                    >
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-3xl shadow-sm">
-                                    {selectedScenario.icon}
+                                <div className="w-14 h-14 bg-accent-indigo/10 border border-accent-indigo/20 rounded-2xl flex items-center justify-center">
+                                    <SelectedIcon className="w-7 h-7 text-accent-indigo" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900">{selectedScenario.name}</h3>
-                                    <p className="text-gray-500 text-sm">Scenario #{selectedScenario.id}</p>
+                                    <h3 className="text-xl font-bold font-bold text-text-primary">{selectedScenario.name}</h3>
+                                    <p className="text-text-muted text-sm">Scenario #{selectedScenario.id}</p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setShowDetails(!showDetails)}
-                                className="text-[#6B5DD3] font-semibold text-sm hover:underline"
+                                className="flex items-center gap-1.5 text-[#1DBF73] text-sm font-medium hover:text-[#19A463] transition-colors"
                             >
-                                {showDetails ? "Hide Details" : "View Full Details"}
+                                {showDetails ? <><ChevronUp className="w-4 h-4" /> Hide Details</> : <><ChevronDown className="w-4 h-4" /> View Full Details</>}
                             </button>
                         </div>
 
-                        {showDetails && (
-                            <div className="space-y-6 mb-8 animate-fade-in">
-                                <div>
-                                    <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                                        <Briefcase className="w-4 h-4 text-[#6B5DD3]" />
-                                        Job Description
-                                    </h4>
-                                    <div className="bg-white p-4 rounded-xl text-sm text-gray-700 whitespace-pre-wrap border border-gray-200">
-                                        {selectedScenario.jobDescription}
-                                    </div>
-                                </div>
+                        <AnimatePresence>
+                            {showDetails && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="space-y-6 mb-8">
+                                        <div>
+                                            <h4 className="font-semibold font-bold text-text-primary mb-2 flex items-center gap-2 text-sm">
+                                                <Briefcase className="w-4 h-4 text-accent-indigo" /> Job Description
+                                            </h4>
+                                            <div className="bg-surface border border-surface-border p-4 rounded-xl text-sm text-text-muted whitespace-pre-wrap leading-relaxed">
+                                                {selectedScenario.jobDescription}
+                                            </div>
+                                        </div>
 
-                                <div>
-                                    <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                                        <CheckCircle className="w-4 h-4 text-blue-500" />
-                                        Deliverable
-                                    </h4>
-                                    <div className="bg-blue-50 p-4 rounded-xl text-sm text-gray-700 whitespace-pre-wrap border border-blue-100">
-                                        {selectedScenario.deliverable}
-                                    </div>
-                                </div>
+                                        <div>
+                                            <h4 className="font-semibold font-bold text-text-primary mb-2 flex items-center gap-2 text-sm">
+                                                <CheckCircle className="w-4 h-4 text-blue-400" /> Deliverable
+                                            </h4>
+                                            <div className="bg-blue-500/5 border border-blue-500/15 p-4 rounded-xl text-sm text-text-muted whitespace-pre-wrap leading-relaxed">
+                                                {selectedScenario.deliverable}
+                                            </div>
+                                        </div>
 
-                                <div className="grid md:grid-cols-2 gap-4">
-                                    <div>
-                                        <h4 className="font-semibold text-red-700 mb-2 flex items-center gap-2">
-                                            <Users className="w-4 h-4" />
-                                            Client&apos;s Evidence
-                                        </h4>
-                                        <div className="bg-red-50 p-4 rounded-xl text-sm text-gray-700 whitespace-pre-wrap border border-red-100 h-48 overflow-y-auto">
-                                            {selectedScenario.clientEvidence}
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div>
+                                                <h4 className="font-semibold font-bold text-red-400 mb-2 flex items-center gap-2 text-sm">
+                                                    <Users className="w-4 h-4" /> Client&apos;s Evidence
+                                                </h4>
+                                                <div className="bg-red-500/5 border border-red-500/15 p-4 rounded-xl text-sm text-text-muted whitespace-pre-wrap leading-relaxed h-48 overflow-y-auto">
+                                                    {selectedScenario.clientEvidence}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-semibold font-bold text-emerald-400 mb-2 flex items-center gap-2 text-sm">
+                                                    <Users className="w-4 h-4" /> Freelancer&apos;s Evidence
+                                                </h4>
+                                                <div className="bg-emerald-500/5 border border-emerald-500/15 p-4 rounded-xl text-sm text-text-muted whitespace-pre-wrap leading-relaxed h-48 overflow-y-auto">
+                                                    {selectedScenario.freelancerEvidence}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <h4 className="font-semibold text-green-700 mb-2 flex items-center gap-2">
-                                            <Users className="w-4 h-4" />
-                                            Freelancer&apos;s Evidence
-                                        </h4>
-                                        <div className="bg-green-50 p-4 rounded-xl text-sm text-gray-700 whitespace-pre-wrap border border-green-100 h-48 overflow-y-auto">
-                                            {selectedScenario.freelancerEvidence}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                        {/* Analyze Button */}
-                        <div className="text-center">
+                        <div className="text-center pt-2">
                             <button
                                 onClick={analyzeDispute}
                                 disabled={loading}
-                                className="btn-primary !px-10 !py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="inline-flex items-center gap-3 px-10 py-4 bg-accent-indigo text-white rounded-xl text-base font-medium hover:bg-accent-indigo/90 transition-all shadow-glow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loading ? (
-                                    <span className="flex items-center gap-3">
+                                    <>
                                         <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                         </svg>
                                         AI is Analyzing...
-                                    </span>
+                                    </>
                                 ) : (
-                                    <span className="flex items-center gap-2">
-                                        <Brain className="w-5 h-5" />
-                                        Analyze with AI
-                                        <ArrowRight className="w-5 h-5" />
-                                    </span>
+                                    <>
+                                        <Brain className="w-5 h-5" /> Analyze with AI <ArrowRight className="w-5 h-5" />
+                                    </>
                                 )}
                             </button>
                         </div>
-                    </div>
+                    </motion.div>
 
-                    {/* Error Display */}
+                    {/* Error */}
                     {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-8 animate-fade-in">
-                            <div className="flex items-center gap-3 text-red-700">
-                                <span className="text-2xl">⚠️</span>
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6 mb-8"
+                        >
+                            <div className="flex items-center gap-3 text-red-400">
+                                <AlertTriangle className="w-5 h-5 shrink-0" />
                                 <div>
                                     <div className="font-semibold">Analysis Failed</div>
-                                    <div className="text-sm">{error}</div>
+                                    <div className="text-sm text-red-400/70 mt-0.5">{error}</div>
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
                     )}
 
-                    {/* AI Analysis Result */}
+                    {/* AI Result */}
                     {analysis && (
-                        <div className="animate-fade-in-up">
-                            <div className="bg-white rounded-3xl border border-gray-200 shadow-xl p-8 md:p-10">
-                                <div className="flex items-center gap-4 mb-8 pb-6 border-b border-gray-100">
-                                    <div className="w-14 h-14 bg-gradient-to-br from-[#6B5DD3] to-[#8B7FE8] rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200">
+                        <motion.div
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, ease: "easeOut" }}
+                        >
+                            <div className="rounded-2xl border border-surface-border bg-surface-elevated/60 p-8 md:p-10">
+                                <div className="flex items-center gap-4 mb-8 pb-6 border-b border-surface-border">
+                                    <div className="w-14 h-14 bg-gradient-to-br from-accent-indigo to-accent-violet rounded-2xl flex items-center justify-center shadow-glow-md">
                                         <Brain className="w-7 h-7 text-white" />
                                     </div>
                                     <div>
-                                        <h2 className="text-2xl font-bold text-gray-900">AI Analysis Complete</h2>
-                                        <p className="text-gray-500">Powered by OpenAI GPT-4</p>
+                                        <h2 className="text-2xl font-bold font-bold text-text-primary">AI Analysis Complete</h2>
+                                        <p className="text-text-muted text-sm">Powered by OpenAI GPT-4</p>
                                     </div>
                                     <div className="ml-auto">
-                                        <CheckCircle className="w-8 h-8 text-green-500" />
+                                        <CheckCircle className="w-8 h-8 text-emerald-400" />
                                     </div>
                                 </div>
-                                <AIAnalysisReport analysis={analysis} />
+                                <AIAnalysisReport analysis={analysis!} />
                             </div>
-                        </div>
+                        </motion.div>
                     )}
                 </div>
             </section>
 
-            {/* How It Works - Matching Homepage */}
-            <section className="py-20 bg-gray-50">
-                <div className="container-custom">
+            {/* How It Works */}
+            <section className="py-20 border-t border-surface-border">
+                <div className="max-w-[1600px] mx-auto px-6">
                     <div className="text-center mb-14">
-                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                        <h2 className="text-3xl md:text-4xl font-light font-bold text-text-primary mb-4">
                             How AI Dispute Resolution Works
                         </h2>
-                        <p className="text-gray-600 max-w-2xl mx-auto">
+                        <p className="text-text-muted max-w-2xl mx-auto">
                             Fair, transparent, and fast resolution powered by AI and community governance
                         </p>
                     </div>
 
                     <div className="grid md:grid-cols-4 gap-8 relative">
-                        {/* Connection Line */}
-                        <div className="hidden md:block absolute top-8 left-[15%] right-[15%] h-0.5 bg-gradient-to-r from-[#6B5DD3] via-[#8B7FE8] to-[#6B5DD3]" />
-
+                        <div className="hidden md:block absolute top-8 left-[15%] right-[15%] h-px bg-gradient-to-r from-accent-indigo/30 via-accent-violet/30 to-accent-indigo/30" />
                         {[
-                            { step: "1", title: "Submit Evidence", desc: "Both parties provide their side", icon: Briefcase },
-                            { step: "2", title: "AI Analysis", desc: "GPT-4 evaluates objectively", icon: Brain },
-                            { step: "3", title: "DAO Voting", desc: "Community jurors review", icon: Users },
-                            { step: "4", title: "Resolution", desc: "Funds released fairly", icon: Zap },
-                        ].map((item) => (
-                            <div key={item.step} className="text-center relative">
-                                <div className="relative z-10 w-16 h-16 bg-gradient-to-br from-[#6B5DD3] to-[#8B7FE8] text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-purple-200">
-                                    <item.icon className="w-7 h-7" />
-                                </div>
-                                <h3 className="font-bold text-gray-900 mb-2">{item.title}</h3>
-                                <p className="text-gray-500 text-sm">{item.desc}</p>
+                            { title: "Submit Evidence", desc: "Both parties provide their side", icon: Briefcase },
+                            { title: "AI Analysis", desc: "GPT-4 evaluates objectively", icon: Brain },
+                            { title: "DAO Voting", desc: "Community jurors review", icon: Users },
+                            { title: "Resolution", desc: "Funds released fairly", icon: Zap },
+                        ].map((item, i) => (
+                            <div key={item.title} className="text-center relative">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 14 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.35, delay: i * 0.08, ease: "easeOut" }}
+                                >
+                                    <div className="relative z-10 w-16 h-16 bg-gradient-to-br from-accent-indigo to-accent-violet text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-glow-sm">
+                                        <item.icon className="w-7 h-7" />
+                                    </div>
+                                    <h3 className="font-medium font-bold text-text-primary mb-2">{item.title}</h3>
+                                    <p className="text-text-muted text-sm">{item.desc}</p>
+                                </motion.div>
                             </div>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* CTA Section - Matching Homepage */}
-            <section className="py-20 gradient-hero relative overflow-hidden">
-                {/* Background decoration */}
-                <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-10 left-10 w-64 h-64 bg-white rounded-full blur-3xl" />
-                    <div className="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl" />
-                </div>
-
-                <div className="relative container-custom text-center">
-                    <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+            {/* CTA */}
+            <section className="py-20 border-t border-surface-border">
+                <div className="max-w-[1600px] mx-auto px-6 text-center relative">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-64 bg-accent-indigo/10 rounded-full blur-3xl pointer-events-none" />
+                    <h2 className="relative text-3xl md:text-5xl font-light font-bold text-text-primary mb-6">
                         Ready to use FairWork?
                     </h2>
-                    <p className="text-gray-300 mb-10 max-w-xl mx-auto text-lg">
+                    <p className="text-text-muted mb-10 max-w-xl mx-auto text-lg">
                         Connect your wallet and experience the fairest freelance platform.
                         AI-powered dispute resolution included.
                     </p>
                     <div className="flex flex-wrap gap-4 justify-center">
-                        <Link href="/disputes" className="btn-primary !bg-white !text-[#003912] hover:!bg-gray-100 flex items-center gap-2">
+                        <Link href="/disputes"
+                            className="inline-flex items-center gap-2 px-8 py-3.5 bg-accent-indigo text-white rounded-xl text-sm font-medium hover:bg-accent-indigo/90 transition-all shadow-glow-sm">
                             View Dispute Center <ArrowRight className="w-4 h-4" />
                         </Link>
-                        <Link href="/" className="btn-outline !border-white !text-white hover:!bg-white/10">
+                        <Link href="/"
+                            className="inline-flex items-center gap-2 px-8 py-3.5 border border-surface-border text-text-muted rounded-xl text-sm font-medium hover:border-accent-indigo/30 hover:text-text-primary transition-all">
                             Back to Home
                         </Link>
                     </div>

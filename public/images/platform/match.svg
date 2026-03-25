@@ -1,0 +1,65 @@
+<svg width="800" height="500" viewBox="0 0 800 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="gm"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <radialGradient id="rgm" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1DBF73" stop-opacity="0.2"/><stop offset="100%" stop-color="#1DBF73" stop-opacity="0"/></radialGradient>
+    <linearGradient id="lgm" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#1DBF73" stop-opacity="0.1"/><stop offset="50%" stop-color="#1DBF73" stop-opacity="1"/><stop offset="100%" stop-color="#1DBF73" stop-opacity="0.1"/></linearGradient>
+  </defs>
+  <!-- Background dots -->
+  <g opacity="0.08">
+    <circle cx="100" cy="100" r="2" fill="#1DBF73"/> <circle cx="200" cy="80" r="2" fill="#1DBF73"/>
+    <circle cx="300" cy="120" r="2" fill="#1DBF73"/> <circle cx="500" cy="80" r="2" fill="#1DBF73"/>
+    <circle cx="600" cy="120" r="2" fill="#1DBF73"/> <circle cx="700" cy="100" r="2" fill="#1DBF73"/>
+    <circle cx="80" cy="250" r="2" fill="#1DBF73"/>  <circle cx="720" cy="250" r="2" fill="#1DBF73"/>
+    <circle cx="100" cy="400" r="2" fill="#1DBF73"/> <circle cx="700" cy="400" r="2" fill="#1DBF73"/>
+  </g>
+  <!-- Client card - left -->
+  <rect x="60" y="150" width="220" height="200" rx="16" fill="#020617" stroke="#1DBF73" stroke-width="1.5" stroke-opacity="0.4"/>
+  <circle cx="170" cy="205" r="30" fill="none" stroke="#1DBF73" stroke-width="2" stroke-opacity="0.6"/>
+  <circle cx="170" cy="198" r="12" fill="#1DBF73" fill-opacity="0.3"/>
+  <path d="M145,220 Q145,212 170,212 Q195,212 195,220" fill="#1DBF73" fill-opacity="0.25" stroke="#1DBF73" stroke-width="1.5"/>
+  <text x="170" y="250" text-anchor="middle" fill="white" font-size="13" font-family="monospace" font-weight="bold">Alex Chen</text>
+  <text x="170" y="268" text-anchor="middle" fill="#1DBF73" font-size="10" font-family="monospace">CLIENT · $2,400 USDC</text>
+  <rect x="80" y="282" width="180" height="28" rx="6" fill="#1DBF73" fill-opacity="0.1" stroke="#1DBF73" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="170" y="301" text-anchor="middle" fill="#1DBF73" font-size="10" font-family="monospace">Smart Contract Dev</text>
+  <rect x="80" y="318" width="80" height="18" rx="4" fill="#1DBF73" fill-opacity="0.08"/>
+  <text x="120" y="331" text-anchor="middle" fill="#1DBF73" font-size="9" font-family="monospace">Solidity</text>
+  <rect x="170" y="318" width="90" height="18" rx="4" fill="#1DBF73" fill-opacity="0.08"/>
+  <text x="215" y="331" text-anchor="middle" fill="#1DBF73" font-size="9" font-family="monospace">DeFi Protocol</text>
+  <!-- Freelancer card - right -->
+  <rect x="520" y="150" width="220" height="200" rx="16" fill="#020617" stroke="#1DBF73" stroke-width="1.5" stroke-opacity="0.4"/>
+  <circle cx="630" cy="205" r="30" fill="none" stroke="#1DBF73" stroke-width="2" stroke-opacity="0.6"/>
+  <circle cx="630" cy="198" r="12" fill="#1DBF73" fill-opacity="0.3"/>
+  <path d="M605,220 Q605,212 630,212 Q655,212 655,220" fill="#1DBF73" fill-opacity="0.25" stroke="#1DBF73" stroke-width="1.5"/>
+  <text x="630" y="250" text-anchor="middle" fill="white" font-size="13" font-family="monospace" font-weight="bold">Sara Kim</text>
+  <text x="630" y="268" text-anchor="middle" fill="#1DBF73" font-size="10" font-family="monospace">FREELANCER · 4.9★</text>
+  <rect x="540" y="282" width="180" height="28" rx="6" fill="#1DBF73" fill-opacity="0.1" stroke="#1DBF73" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="630" y="301" text-anchor="middle" fill="#1DBF73" font-size="10" font-family="monospace">Solidity Expert · 3yr</text>
+  <rect x="540" y="318" width="80" height="18" rx="4" fill="#1DBF73" fill-opacity="0.08"/>
+  <text x="580" y="331" text-anchor="middle" fill="#1DBF73" font-size="9" font-family="monospace">Auditing</text>
+  <rect x="630" y="318" width="90" height="18" rx="4" fill="#1DBF73" fill-opacity="0.08"/>
+  <text x="675" y="331" text-anchor="middle" fill="#1DBF73" font-size="9" font-family="monospace">OpenZeppelin</text>
+  <!-- Center match indicator -->
+  <circle cx="400" cy="250" r="55" fill="url(#rgm)"/>
+  <circle cx="400" cy="250" r="28" fill="#020617" stroke="#1DBF73" stroke-width="2.5" filter="url(#gm)">
+    <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Checkmark in center -->
+  <path d="M388,250 L396,258 L413,242" fill="none" stroke="#1DBF73" stroke-width="3" stroke-linecap="round"/>
+  <!-- Connection lines -->
+  <path d="M280,230 Q340,210 372,240" fill="none" stroke="url(#lgm)" stroke-width="2" filter="url(#gm)"/>
+  <circle r="3.5" fill="#1DBF73" filter="url(#gm)"><animateMotion dur="2s" repeatCount="indefinite" path="M280,230 Q340,210 372,240"/></circle>
+  <path d="M280,270 Q340,290 372,262" fill="none" stroke="url(#lgm)" stroke-width="2" filter="url(#gm)"/>
+  <circle r="3.5" fill="#1DBF73" filter="url(#gm)"><animateMotion dur="2.5s" repeatCount="indefinite" begin="0.5s" path="M280,270 Q340,290 372,262"/></circle>
+  <path d="M520,230 Q460,210 428,240" fill="none" stroke="url(#lgm)" stroke-width="2" filter="url(#gm)"/>
+  <circle r="3.5" fill="#1DBF73" filter="url(#gm)"><animateMotion dur="2s" repeatCount="indefinite" begin="1s" path="M520,230 Q460,210 428,240"/></circle>
+  <path d="M520,270 Q460,290 428,262" fill="none" stroke="url(#lgm)" stroke-width="2" filter="url(#gm)"/>
+  <circle r="3.5" fill="#1DBF73" filter="url(#gm)"><animateMotion dur="2.5s" repeatCount="indefinite" begin="1.5s" path="M520,270 Q460,290 428,262"/></circle>
+  <!-- Escrow bar at bottom -->
+  <rect x="180" y="400" width="440" height="40" rx="10" fill="#020617" stroke="#1DBF73" stroke-width="1.5" stroke-opacity="0.3"/>
+  <rect x="192" y="412" width="140" height="16" rx="4" fill="#1DBF73" fill-opacity="0.15"/>
+  <text x="262" y="424" text-anchor="middle" fill="#1DBF73" font-size="10" font-family="monospace">$2,400 USDC LOCKED</text>
+  <rect x="346" y="412" width="120" height="16" rx="4" fill="#1DBF73" fill-opacity="0.08"/>
+  <text x="406" y="424" text-anchor="middle" fill="#1DBF73" font-size="10" font-family="monospace">IN ESCROW</text>
+  <circle cx="490" cy="420" r="5" fill="#1DBF73"><animate attributeName="opacity" values="1;0.2;1" dur="1.5s" repeatCount="indefinite"/></circle>
+  <text x="506" y="424" fill="#1DBF73" font-size="10" font-family="monospace">LIVE</text>
+</svg>

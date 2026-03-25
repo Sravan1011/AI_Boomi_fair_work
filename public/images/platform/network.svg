@@ -1,0 +1,58 @@
+<svg width="800" height="500" viewBox="0 0 800 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="gn"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <radialGradient id="rgn" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1DBF73" stop-opacity="0.3"/><stop offset="100%" stop-color="#1DBF73" stop-opacity="0"/></radialGradient>
+  </defs>
+  <!-- Polygon network nodes -->
+  <!-- Center hub -->
+  <circle cx="400" cy="250" r="80" fill="url(#rgn)"/>
+  <circle cx="400" cy="250" r="32" fill="#020617" stroke="#1DBF73" stroke-width="2.5" filter="url(#gn)">
+    <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="400" y="255" text-anchor="middle" fill="#1DBF73" font-size="10" font-family="monospace">POLY</text>
+  <circle cx="400" cy="250" r="55" fill="none" stroke="#1DBF73" stroke-width="1" stroke-opacity="0.15" stroke-dasharray="4,4">
+    <animateTransform attributeName="transform" type="rotate" from="0 400 250" to="360 400 250" dur="25s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Node 1 — top -->
+  <circle cx="400" cy="100" r="22" fill="#020617" stroke="#1DBF73" stroke-width="2" filter="url(#gn)"/>
+  <text x="400" y="104" text-anchor="middle" fill="#1DBF73" font-size="9" font-family="monospace">0x4C</text>
+  <line x1="400" y1="122" x2="400" y2="218" stroke="#1DBF73" stroke-width="1.5" stroke-opacity="0.4"/>
+  <circle r="3" fill="#1DBF73" filter="url(#gn)"><animateMotion dur="1.8s" repeatCount="indefinite" path="M400,122 L400,218"/></circle>
+  <!-- Node 2 — top right -->
+  <circle cx="590" cy="140" r="22" fill="#020617" stroke="#1DBF73" stroke-width="2" filter="url(#gn)"/>
+  <text x="590" y="144" text-anchor="middle" fill="#1DBF73" font-size="9" font-family="monospace">0x7F</text>
+  <line x1="572" y1="156" x2="421" y2="228" stroke="#1DBF73" stroke-width="1.5" stroke-opacity="0.4"/>
+  <circle r="3" fill="#1DBF73" filter="url(#gn)"><animateMotion dur="2s" repeatCount="indefinite" begin="0.3s" path="M572,156 L421,228"/></circle>
+  <!-- Node 3 — right -->
+  <circle cx="650" cy="280" r="22" fill="#020617" stroke="#1DBF73" stroke-width="2" filter="url(#gn)"/>
+  <text x="650" y="284" text-anchor="middle" fill="#1DBF73" font-size="9" font-family="monospace">0xA1</text>
+  <line x1="628" y1="272" x2="432" y2="256" stroke="#1DBF73" stroke-width="1.5" stroke-opacity="0.4"/>
+  <circle r="3" fill="#1DBF73" filter="url(#gn)"><animateMotion dur="2.2s" repeatCount="indefinite" begin="0.6s" path="M628,272 L432,256"/></circle>
+  <!-- Node 4 — bottom right -->
+  <circle cx="570" cy="400" r="22" fill="#020617" stroke="#1DBF73" stroke-width="2" filter="url(#gn)"/>
+  <text x="570" y="404" text-anchor="middle" fill="#1DBF73" font-size="9" font-family="monospace">0x2B</text>
+  <line x1="550" y1="385" x2="422" y2="278" stroke="#1DBF73" stroke-width="1.5" stroke-opacity="0.4"/>
+  <circle r="3" fill="#1DBF73" filter="url(#gn)"><animateMotion dur="2s" repeatCount="indefinite" begin="0.9s" path="M550,385 L422,278"/></circle>
+  <!-- Node 5 — bottom left -->
+  <circle cx="230" cy="400" r="22" fill="#020617" stroke="#1DBF73" stroke-width="2" filter="url(#gn)"/>
+  <text x="230" y="404" text-anchor="middle" fill="#1DBF73" font-size="9" font-family="monospace">0xE9</text>
+  <line x1="250" y1="385" x2="378" y2="278" stroke="#1DBF73" stroke-width="1.5" stroke-opacity="0.4"/>
+  <circle r="3" fill="#1DBF73" filter="url(#gn)"><animateMotion dur="2.1s" repeatCount="indefinite" begin="1.2s" path="M250,385 L378,278"/></circle>
+  <!-- Node 6 — left -->
+  <circle cx="150" cy="280" r="22" fill="#020617" stroke="#1DBF73" stroke-width="2" filter="url(#gn)"/>
+  <text x="150" y="284" text-anchor="middle" fill="#1DBF73" font-size="9" font-family="monospace">0x3D</text>
+  <line x1="172" y1="272" x2="368" y2="256" stroke="#1DBF73" stroke-width="1.5" stroke-opacity="0.4"/>
+  <circle r="3" fill="#1DBF73" filter="url(#gn)"><animateMotion dur="1.9s" repeatCount="indefinite" begin="1.5s" path="M172,272 L368,256"/></circle>
+  <!-- Node 7 — top left -->
+  <circle cx="210" cy="140" r="22" fill="#020617" stroke="#1DBF73" stroke-width="2" filter="url(#gn)"/>
+  <text x="210" y="144" text-anchor="middle" fill="#1DBF73" font-size="9" font-family="monospace">0x9C</text>
+  <line x1="228" y1="156" x2="379" y2="228" stroke="#1DBF73" stroke-width="1.5" stroke-opacity="0.4"/>
+  <circle r="3" fill="#1DBF73" filter="url(#gn)"><animateMotion dur="2.3s" repeatCount="indefinite" begin="1.8s" path="M228,156 L379,228"/></circle>
+  <!-- Outer ring connections (node to node) -->
+  <path d="M400,78 Q502,100 570,122" fill="none" stroke="#1DBF73" stroke-width="1" stroke-opacity="0.15"/>
+  <path d="M590,162 Q632,210 630,260" fill="none" stroke="#1DBF73" stroke-width="1" stroke-opacity="0.15"/>
+  <path d="M640,300 Q620,360 550,382" fill="none" stroke="#1DBF73" stroke-width="1" stroke-opacity="0.15"/>
+  <path d="M250,418 Q180,400 172,300" fill="none" stroke="#1DBF73" stroke-width="1" stroke-opacity="0.15"/>
+  <!-- Label -->
+  <text x="400" y="470" text-anchor="middle" fill="#1DBF73" font-size="11" font-family="monospace" opacity="0.5">POLYGON AMOY NETWORK · 7 VALIDATORS</text>
+</svg>

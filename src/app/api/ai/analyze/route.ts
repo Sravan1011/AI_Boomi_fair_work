@@ -14,6 +14,13 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { jobDescription, deliverable, clientEvidence, freelancerEvidence } = body;
 
+        if (!jobDescription || !deliverable || !clientEvidence || !freelancerEvidence) {
+            return NextResponse.json(
+                { error: "jobDescription, deliverable, clientEvidence, and freelancerEvidence are required" },
+                { status: 400 }
+            );
+        }
+
         // Load the dispute analysis prompt
         const promptPath = join(process.cwd(), "prompts", "dispute-analysis.txt");
         const promptTemplate = await readFile(promptPath, "utf-8");
@@ -81,7 +88,9 @@ Now analyze this dispute and return ONLY valid JSON (no markdown, no code blocks
         return NextResponse.json(
             {
                 error: "Failed to analyze dispute",
-                details: error instanceof Error ? error.message : "Unknown error"
+                ...(process.env.NODE_ENV !== "production" && {
+                    details: error instanceof Error ? error.message : "Unknown error",
+                }),
             },
             { status: 500 }
         );

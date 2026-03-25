@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PINATA_JWT = process.env.PINATA_JWT;
-
 /**
  * Upload JSON data to IPFS via Pinata
  * This is a server-side API route to keep the JWT secret
  */
 export async function POST(request: NextRequest) {
+    const PINATA_JWT = process.env.PINATA_JWT;
     try {
         if (!PINATA_JWT) {
-            throw new Error("Missing PINATA_JWT environment variable");
+            return NextResponse.json(
+                { error: "Pinata JWT not configured" },
+                { status: 503 }
+            );
         }
 
         const body = await request.json();
@@ -49,7 +51,12 @@ export async function POST(request: NextRequest) {
     } catch (error: unknown) {
         console.error("API upload error:", error);
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Upload failed" },
+            {
+                error: "Upload failed",
+                ...(process.env.NODE_ENV !== "production" && {
+                    details: error instanceof Error ? error.message : String(error),
+                }),
+            },
             { status: 500 }
         );
     }

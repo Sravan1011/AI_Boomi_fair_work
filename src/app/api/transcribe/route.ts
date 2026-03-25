@@ -89,7 +89,12 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error("Transcription error:", error);
         return NextResponse.json(
-            { error: "Transcription failed", details: error instanceof Error ? error.message : String(error) },
+            {
+                error: "Transcription failed",
+                ...(process.env.NODE_ENV !== "production" && {
+                    details: error instanceof Error ? error.message : String(error),
+                }),
+            },
             { status: 500 }
         );
     }

@@ -58,3 +58,11 @@ contracts/broadcast/
 
 # Supabase
 .supabase/
+
+# Tool config directories
+.agent/
+.stitch/
+.claude/worktrees/
+
+# Research paper
+research_paper/

@@ -22,7 +22,6 @@ export default function ProfileMenu() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const ref = useRef<HTMLDivElement>(null);
 
-    // Fetch profile when connected
     useEffect(() => {
         if (!address) { setProfile(null); return; }
         supabase
@@ -33,7 +32,6 @@ export default function ProfileMenu() {
             .then(({ data }) => setProfile(data));
     }, [address]);
 
-    // Close on outside click
     useEffect(() => {
         const handler = (e: MouseEvent) => {
             if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -44,122 +42,71 @@ export default function ProfileMenu() {
 
     if (!isConnected || !address) return null;
 
-    // Avatar: image or gradient initial
     const initials = profile?.display_name
         ? profile.display_name[0].toUpperCase()
         : address.slice(2, 4).toUpperCase();
-
     const shortAddress = `${address.slice(0, 6)}…${address.slice(-4)}`;
     const displayName = profile?.display_name || shortAddress;
 
     const menuItems = [
-        { icon: <LayoutDashboard className="w-4 h-4" />, label: "Dashboard", href: "/dashboard" },
-        { icon: <User className="w-4 h-4" />, label: "View Profile", href: `/profile/${address}` },
-        { icon: <Settings className="w-4 h-4" />, label: "Edit Profile", href: "/profile/edit" },
+        { icon: <LayoutDashboard className="w-4 h-4" />, label: "Dashboard",    href: "/dashboard" },
+        { icon: <User className="w-4 h-4" />,            label: "View Profile", href: `/profile/${address}` },
+        { icon: <Settings className="w-4 h-4" />,        label: "Edit Profile", href: "/profile/edit" },
     ];
 
     return (
-        <div ref={ref} style={{ position: "relative" }}>
-            {/* Avatar button */}
+        <div ref={ref} className="relative">
+            {/* Trigger */}
             <button
                 onClick={() => setOpen((o) => !o)}
-                style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    padding: "6px 12px 6px 6px",
-                    borderRadius: 99,
-                    border: "1.5px solid rgba(255,255,255,0.1)",
-                    background: open ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.04)",
-                    cursor: "pointer", fontFamily: "inherit",
-                    transition: "all 0.2s",
-                }}
+                className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border transition-all duration-150 cursor-pointer ${
+                    open
+                        ? "bg-[#E9F9F0] border-[#1DBF73]/40"
+                        : "bg-white border-[#E4E5E7] hover:border-[#1DBF73]/40 hover:bg-[#F0FBF6]"
+                }`}
             >
-                {/* Avatar circle */}
                 {profile?.avatar_url ? (
-                    <Image
-                        src={profile.avatar_url}
-                        width={30}
-                        height={30}
-                        alt={displayName}
-                        style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover" }}
-                    />
+                    <Image src={profile.avatar_url} width={28} height={28} alt={displayName}
+                        className="w-7 h-7 rounded-full object-cover" />
                 ) : (
-                    <div style={{
-                        width: 30, height: 30, borderRadius: "50%",
-                        background: "linear-gradient(135deg, #6366f1, #7c3aed)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: "0.75rem", fontWeight: 700, color: "#fff", flexShrink: 0,
-                    }}>
+                    <div className="w-7 h-7 rounded-full bg-[#1DBF73] flex items-center justify-center text-xs font-bold text-white shrink-0">
                         {initials}
                     </div>
                 )}
-
-                {/* Name */}
-                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#f0f0f5", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span className="text-sm font-medium text-[#404145] max-w-[100px] truncate">
                     {displayName}
                 </span>
-
-                <ChevronDown
-                    className="w-3.5 h-3.5"
-                    style={{ color: "#8888a0", transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
-                />
+                <ChevronDown className={`w-3.5 h-3.5 text-[#74767E] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
             </button>
 
             {/* Dropdown */}
             {open && (
-                <div style={{
-                    position: "absolute", top: "calc(100% + 8px)", right: 0,
-                    minWidth: 220,
-                    background: "#0f0f1a",
-                    border: "1.5px solid rgba(255,255,255,0.08)",
-                    borderRadius: 14,
-                    boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
-                    zIndex: 100,
-                    overflow: "hidden",
-                }}>
+                <div className="absolute top-[calc(100%+6px)] right-0 w-56 bg-white border border-[#E4E5E7] rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.10)] z-50 overflow-hidden">
                     {/* Profile header */}
-                    <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                        <p style={{ fontSize: "0.88rem", fontWeight: 700, color: "#f0f0f5", margin: 0 }}>{displayName}</p>
+                    <div className="px-4 py-3 border-b border-[#F0F0F0] bg-[#FAFAFA]">
+                        <p className="text-sm font-semibold text-[#404145] truncate">{displayName}</p>
                         {profile?.title && (
-                            <p style={{ fontSize: "0.75rem", color: "#8888a0", marginTop: 2 }}>{profile.title}</p>
+                            <p className="text-xs text-[#74767E] mt-0.5">{profile.title}</p>
                         )}
-                        <p style={{ fontSize: "0.72rem", color: "#555", marginTop: 4, fontFamily: "monospace" }}>{shortAddress}</p>
+                        <p className="text-xs text-[#95979D] mt-1 font-mono">{shortAddress}</p>
                     </div>
 
                     {/* Menu items */}
-                    <div style={{ padding: "8px 0" }}>
+                    <div className="py-1">
                         {menuItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={() => setOpen(false)}
-                                style={{
-                                    display: "flex", alignItems: "center", gap: 10,
-                                    padding: "10px 16px",
-                                    color: "#c0c0d0", fontSize: "0.85rem", fontWeight: 500,
-                                    textDecoration: "none", transition: "all 0.15s",
-                                }}
-                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(99,102,241,0.08)"; (e.currentTarget as HTMLElement).style.color = "#f0f0f5"; }}
-                                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#c0c0d0"; }}
-                            >
-                                <span style={{ color: "#6366f1" }}>{item.icon}</span>
+                            <Link key={item.href} href={item.href} onClick={() => setOpen(false)}
+                                className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#74767E] hover:text-[#404145] hover:bg-[#F7F7F7] transition-colors">
+                                <span className="text-[#1DBF73]">{item.icon}</span>
                                 {item.label}
                             </Link>
                         ))}
                     </div>
 
                     {/* Disconnect */}
-                    <div style={{ padding: "8px 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div className="py-1 border-t border-[#F0F0F0]">
                         <button
                             onClick={() => { disconnect(); setOpen(false); router.push("/"); }}
-                            style={{
-                                display: "flex", alignItems: "center", gap: 10,
-                                width: "100%", padding: "10px 16px",
-                                background: "none", border: "none",
-                                color: "#f87171", fontSize: "0.85rem", fontWeight: 500,
-                                cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
-                            }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(248,113,113,0.08)"; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
                         >
                             <LogOut className="w-4 h-4" />
                             Disconnect Wallet

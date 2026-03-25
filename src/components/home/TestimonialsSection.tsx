@@ -5,7 +5,6 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Star } from "lucide-react";
 
-gsap.registerPlugin(ScrollTrigger);
 
 const testimonials = [
     {
@@ -35,6 +34,7 @@ export default function TestimonialsSection() {
     const sectionRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
+        gsap.registerPlugin(ScrollTrigger);
         const ctx = gsap.context(() => {
             gsap.from(".testi-headline", {
                 opacity: 0, y: 30,

@@ -5,7 +5,6 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Briefcase, Lock, Clock, Zap } from "lucide-react";
 
-gsap.registerPlugin(ScrollTrigger);
 
 const steps = [
     { n: "01", icon: Briefcase, title: "Post a Job", desc: "Describe your project, set your budget, and specify deadline." },
@@ -18,6 +17,7 @@ export default function HowItWorksSection() {
     const sectionRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
+        gsap.registerPlugin(ScrollTrigger);
         const ctx = gsap.context(() => {
             // Section headline
             gsap.from(".hiw-headline", {

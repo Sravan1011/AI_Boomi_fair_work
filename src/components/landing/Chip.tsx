@@ -15,8 +15,8 @@ export default function Chip({ label, active = false, onClick }: ChipProps) {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
             className={`relative rounded-pill px-5 py-2.5 text-sm font-medium transition-all duration-300 ${active
-                    ? "bg-white text-backdrop shadow-glow-sm"
-                    : "bg-white/[0.06] text-text-muted hover:bg-white/[0.1] hover:text-text-primary border border-transparent hover:border-surface-border"
+                    ? "bg-[#1DBF73] text-white shadow-card"
+                    : "bg-white text-[#74767E] hover:bg-[#F7F7F7] hover:text-[#404145] border border-[#E4E5E7]"
                 }`}
         >
             {label}

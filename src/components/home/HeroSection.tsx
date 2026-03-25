@@ -6,7 +6,6 @@ import { ArrowRight, Search } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(ScrollTrigger);
 
 const TAGS = ["Smart Contracts", "Web3 Apps", "AI Agents", "DeFi", "NFT Projects"];
 
@@ -21,6 +20,7 @@ export default function HeroSection() {
     const tagsRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        gsap.registerPlugin(ScrollTrigger);
         const ctx = gsap.context(() => {
             // ── Entrance timeline ──────────────────────────────
             const tl = gsap.timeline({ delay: 0.1 });

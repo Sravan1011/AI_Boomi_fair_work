@@ -63,7 +63,12 @@ export async function GET(request: NextRequest) {
     } catch (error) {
         console.error("Failed to fetch JaaS recordings:", error);
         return NextResponse.json(
-            { error: "Failed to fetch recordings", details: error instanceof Error ? error.message : String(error) },
+            {
+                error: "Failed to fetch recordings",
+                ...(process.env.NODE_ENV !== "production" && {
+                    details: error instanceof Error ? error.message : String(error),
+                }),
+            },
             { status: 500 }
         );
     }
@@ -114,7 +119,12 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error("Recording upload error:", error);
         return NextResponse.json(
-            { error: "Failed to process recording", details: error instanceof Error ? error.message : String(error) },
+            {
+                error: "Failed to process recording",
+                ...(process.env.NODE_ENV !== "production" && {
+                    details: error instanceof Error ? error.message : String(error),
+                }),
+            },
             { status: 500 }
         );
     }

@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(ScrollTrigger);
 
 const stats = [
     { value: "2.5%", label: "Platform Fee — lowest in web3" },
@@ -19,6 +18,7 @@ export function StatsBar() {
     const sectionRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
+        gsap.registerPlugin(ScrollTrigger);
         const ctx = gsap.context(() => {
             // Stat values count-up effect
             gsap.from(".stat-item", {
@@ -96,6 +96,7 @@ export function FeaturesSection() {
     ];
 
     useEffect(() => {
+        gsap.registerPlugin(ScrollTrigger);
         const ctx = gsap.context(() => {
             gsap.from(".feature-card", {
                 opacity: 0,

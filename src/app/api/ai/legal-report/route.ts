@@ -195,7 +195,9 @@ Generate the full HTML legal document report now.`;
         return NextResponse.json(
             {
                 error: "Failed to generate legal report",
-                details: error instanceof Error ? error.message : String(error),
+                ...(process.env.NODE_ENV !== "production" && {
+                    details: error instanceof Error ? error.message : String(error),
+                }),
             },
             { status: 500 }
         );

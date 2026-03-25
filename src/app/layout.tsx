@@ -1,8 +1,13 @@
 import dynamic from "next/dynamic";
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 
-const inter = Inter({ subsets: ["latin"] });
+const jakartaSans = Plus_Jakarta_Sans({
+    subsets: ["latin"],
+    weight: ["300", "400", "500", "600", "700", "800"],
+    variable: "--font-jakarta",
+    display: "swap",
+});
 
 // Import Providers with SSR disabled to prevent hydration errors
 const Providers = dynamic(
@@ -16,8 +21,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" className="dark">
-            <body className={inter.className}>
+        <html lang="en">
+            <body className={`${jakartaSans.variable} font-sans`}>
                 <Providers>{children}</Providers>
             </body>
         </html>

@@ -15,6 +15,8 @@ import { supabase } from "@/lib/supabase";
 import { formatUSDC, formatAddress, getIPFSUrl } from "@/lib/utils";
 import { Loader2, ExternalLink, Upload, CheckCircle2, AlertTriangle, XCircle, MessageCircle, UserCheck } from "lucide-react";
 import JobXmtpChat from "@/components/chat/JobXmtpChat";
+import { useGSAP } from "@/hooks/useGSAP";
+import gsap from "gsap";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -58,52 +60,30 @@ export default function JobDetailsPage() {
     const [pendingTxHash, setPendingTxHash] = useState<`0x${string}` | undefined>();
     const [pendingAction, setPendingAction] = useState<string | null>(null);
     const [jobEventNotice, setJobEventNotice] = useState<string | null>(null);
-    const chatSectionRef = useRef<HTMLDivElement | null>(null);
+    
+    const sidebarRef = useRef<HTMLDivElement | null>(null);
+    const chatSectionRef = useRef<HTMLElement | null>(null);
 
-    // Wait for ANY transaction confirmation
-    const { data: txReceipt } = useWaitForTransactionReceipt({
-        hash: pendingTxHash,
-    });
+    const { data: txReceipt } = useWaitForTransactionReceipt({ hash: pendingTxHash });
 
     const fetchJob = async () => {
+        if (!params.id) return;
+        const jobId = Array.isArray(params.id) ? params.id[0] : params.id;
         const { data, error } = await supabase
-            .from("jobs")
-            .select("*")
-            .eq("id", params.id)
-            .single();
-
-        if (error) {
-            console.error("Error fetching job:", error);
-        } else {
-            setJob(data);
-        }
+            .from("jobs").select("*").eq("id", jobId).single();
+        if (error) console.error("Error fetching job:", error);
+        else setJob(data);
         setIsLoading(false);
     };
 
     const createNotification = async ({
-        wallet,
-        type,
-        title,
-        message,
-        jobId,
-    }: {
-        wallet: string;
-        type: string;
-        title: string;
-        message: string;
-        jobId?: string;
-    }) => {
+        wallet, type, title, message, jobId,
+    }: { wallet: string; type: string; title: string; message: string; jobId?: string }) => {
         try {
             await supabase.from("notifications").insert({
-                wallet: wallet.toLowerCase(),
-                type,
-                title,
-                message,
-                job_id: jobId,
+                wallet: wallet.toLowerCase(), type, title, message, job_id: jobId,
             });
-        } catch (error) {
-            console.error("Failed to create notification:", error);
-        }
+        } catch (error) { console.error("Failed to create notification:", error); }
     };
 
     useEffect(() => {
@@ -111,16 +91,21 @@ export default function JobDetailsPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.id]);
 
-    // Handle transaction confirmation for ALL actions
+    useGSAP(() => {
+        if (isLoading) return;
+        const tl = gsap.timeline();
+        if (sidebarRef.current) {
+            tl.from(sidebarRef.current, { x: -50, opacity: 0, duration: 0.8, ease: "power3.out" });
+        }
+        if (chatSectionRef.current) {
+            tl.from(chatSectionRef.current, { x: 50, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.6");
+        }
+    }, [isLoading]);
+
     useEffect(() => {
         const handleTxConfirmation = async () => {
             if (!txReceipt || !pendingAction || !job) return;
-
-            console.log(`📝 [${pendingAction}] Transaction receipt:`, txReceipt);
-
             if (txReceipt.status === "success") {
-                console.log(`✅ [${pendingAction}] Transaction confirmed!`);
-
                 switch (pendingAction) {
                     case "cancel":
                         await supabase.from("jobs").update({ status: "CANCELLED" }).eq("id", job.id);
@@ -129,33 +114,17 @@ export default function JobDetailsPage() {
                         alert("✅ Job cancelled successfully! Refund sent to your wallet.");
                         router.push("/jobs");
                         break;
-
                     case "accept":
                         {
                             const { error } = await supabase
-                                .from("jobs")
-                                .update({ freelancer: address, status: "WAITING_CLIENT_APPROVAL" })
-                                .eq("id", job.id);
-
-                            // Keep UI responsive even if Supabase sync is delayed/fails.
-                            setJob((prev) =>
-                                prev
-                                    ? {
-                                        ...prev,
-                                        freelancer: address || prev.freelancer,
-                                        status: "WAITING_CLIENT_APPROVAL",
-                                    }
-                                    : prev
-                            );
-
+                                .from("jobs").update({ freelancer: address, status: "WAITING_CLIENT_APPROVAL" }).eq("id", job.id);
+                            setJob((prev) => prev ? { ...prev, freelancer: address || prev.freelancer, status: "WAITING_CLIENT_APPROVAL" } : prev);
                             if (error) {
-                                console.error("Supabase update failed after accept:", error);
                                 setJobEventNotice("Accepted on-chain. Waiting for client approval. Database sync is pending.");
                             } else {
                                 setJobEventNotice("Accepted on-chain. Waiting for client approval before chat and work start.");
                                 await createNotification({
-                                    wallet: job.client,
-                                    type: "job_acceptance_requested",
+                                    wallet: job.client, type: "job_acceptance_requested",
                                     title: "Freelancer requested approval",
                                     message: `${formatAddress(address || "")} accepted "${job.title}". Approve to enable chat and start work.`,
                                     jobId: job.id,
@@ -164,19 +133,16 @@ export default function JobDetailsPage() {
                             }
                         }
                         break;
-
                     case "approve":
                         await supabase.from("jobs").update({ status: "APPROVED" }).eq("id", job.id);
                         alert("✅ Job approved! Funds released to freelancer.");
                         fetchJob();
                         break;
-
                     case "submit":
                         await supabase.from("jobs").update({ status: "SUBMITTED" }).eq("id", job.id);
                         alert("✅ Deliverable submitted successfully!");
                         fetchJob();
                         break;
-
                     case "dispute":
                         await supabase.from("jobs").update({ status: "DISPUTED" }).eq("id", job.id);
                         alert("✅ Dispute raised successfully!");
@@ -184,235 +150,124 @@ export default function JobDetailsPage() {
                         break;
                 }
             } else {
-                console.error(`❌ [${pendingAction}] Transaction FAILED on-chain!`);
-                alert(`❌ Transaction failed on-chain! The ${pendingAction} was NOT processed.\n\nCheck the transaction on Polygonscan for details.`);
+                alert(`❌ Transaction failed on-chain! The ${pendingAction} was NOT processed.`);
                 setIsCancelling(false);
                 setShowCancelDialog(false);
             }
-
-            // Reset pending state
             setPendingTxHash(undefined);
             setPendingAction(null);
         };
-
         handleTxConfirmation();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [txReceipt]);
 
     const handleAcceptJob = () => {
         if (!job) return;
-
         writeContract({
-            address: ESCROW_CONTRACT_ADDRESS,
-            abi: ESCROW_ABI,
-            functionName: "acceptJob",
+            address: ESCROW_CONTRACT_ADDRESS, abi: ESCROW_ABI, functionName: "acceptJob",
             args: [BigInt(job.contract_job_id)],
         }, {
-                onSuccess: (txHash) => {
-                    console.log("✅ Accept tx sent:", txHash);
-                    setJobEventNotice("Acceptance transaction sent. Waiting for on-chain confirmation...");
-                    setPendingTxHash(txHash);
-                    setPendingAction("accept");
-                },
-            onError: (error: Error) => {
-                console.error("❌ Accept job error:", error);
-                alert(`❌ Failed to accept job: ${error.message}`);
+            onSuccess: (txHash) => {
+                setJobEventNotice("Acceptance transaction sent. Waiting for on-chain confirmation...");
+                setPendingTxHash(txHash); setPendingAction("accept");
             },
+            onError: (error: Error) => alert(`❌ Failed to accept job: ${error.message}`),
         });
     };
 
     const handleSubmitDeliverable = async () => {
         if (!deliverableFile || !job) return;
-
         try {
-            // Upload to IPFS
             const formData = new FormData();
             formData.append("file", deliverableFile);
-
-            const response = await fetch("/api/ipfs/upload", {
-                method: "POST",
-                body: formData,
-            });
-
+            const response = await fetch("/api/ipfs/upload", { method: "POST", body: formData });
             const { ipfsHash } = await response.json();
-
-            // Submit to contract
             writeContract({
-                address: ESCROW_CONTRACT_ADDRESS,
-                abi: ESCROW_ABI,
-                functionName: "submitDeliverable",
+                address: ESCROW_CONTRACT_ADDRESS, abi: ESCROW_ABI, functionName: "submitDeliverable",
                 args: [BigInt(job.contract_job_id), ipfsHash],
             }, {
                 onSuccess: async (txHash) => {
-                    console.log("✅ Submit deliverable tx sent:", txHash);
-                    // Save IPFS hash to database immediately (this is safe, it's just metadata)
-                    await supabase
-                        .from("jobs")
-                        .update({ deliverable_ipfs: ipfsHash })
-                        .eq("id", job.id);
-                    setPendingTxHash(txHash);
-                    setPendingAction("submit");
+                    await supabase.from("jobs").update({ deliverable_ipfs: ipfsHash }).eq("id", job.id);
+                    setPendingTxHash(txHash); setPendingAction("submit");
                 },
-                onError: (error: Error) => {
-                    console.error("❌ Submit deliverable error:", error);
-                    alert(`❌ Failed to submit deliverable: ${error.message}`);
-                },
+                onError: (error: Error) => alert(`❌ Failed to submit deliverable: ${error.message}`),
             });
-        } catch (error) {
-            console.error("Error submitting deliverable:", error);
-            alert("Failed to submit deliverable");
-        }
+        } catch (error) { console.error("Error submitting deliverable:", error); alert("Failed to submit deliverable"); }
     };
 
     const handleApproveJob = () => {
         if (!job) return;
-
         writeContract({
-            address: ESCROW_CONTRACT_ADDRESS,
-            abi: ESCROW_ABI,
-            functionName: "approveJob",
+            address: ESCROW_CONTRACT_ADDRESS, abi: ESCROW_ABI, functionName: "approveJob",
             args: [BigInt(job.contract_job_id)],
         }, {
-            onSuccess: (txHash) => {
-                console.log("✅ Approve tx sent:", txHash);
-                setPendingTxHash(txHash);
-                setPendingAction("approve");
-            },
-            onError: (error: Error) => {
-                console.error("❌ Approve job error:", error);
-                alert(`❌ Failed to approve job: ${error.message}`);
-            },
+            onSuccess: (txHash) => { setPendingTxHash(txHash); setPendingAction("approve"); },
+            onError: (error: Error) => alert(`❌ Failed to approve job: ${error.message}`),
         });
     };
 
     const handleApproveFreelancerAcceptance = async () => {
         if (!job || !job.freelancer || !isClient) return;
-
-        const { error } = await supabase
-            .from("jobs")
-            .update({ status: "ACCEPTED" })
-            .eq("id", job.id);
-
-        if (error) {
-            console.error("Failed to approve freelancer acceptance:", error);
-            alert(`❌ Failed to approve freelancer: ${error.message}`);
-            return;
-        }
-
+        const { error } = await supabase.from("jobs").update({ status: "ACCEPTED" }).eq("id", job.id);
+        if (error) { alert(`❌ Failed to approve freelancer: ${error.message}`); return; }
         setJob((prev) => (prev ? { ...prev, status: "ACCEPTED" } : prev));
         setJobEventNotice("Freelancer approved. Chat is now enabled.");
-
         await createNotification({
-            wallet: job.freelancer,
-            type: "job_accepted",
+            wallet: job.freelancer, type: "job_accepted",
             title: "Your acceptance was approved",
             message: `Client approved your acceptance for "${job.title}". You can now chat and proceed with the job.`,
             jobId: job.id,
         });
-
-        setTimeout(() => {
-            chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 300);
+        setTimeout(() => { chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 300);
     };
 
     const handleRaiseDispute = async () => {
         if (!evidenceFile || !disputeReason || !job) return;
-
         try {
-            // Upload evidence to IPFS
             const formData = new FormData();
             formData.append("file", evidenceFile);
-
-            const response = await fetch("/api/ipfs/upload", {
-                method: "POST",
-                body: formData,
-            });
-
+            const response = await fetch("/api/ipfs/upload", { method: "POST", body: formData });
             const { ipfsHash } = await response.json();
-
-            // Raise dispute on contract
             writeContract({
-                address: ESCROW_CONTRACT_ADDRESS,
-                abi: ESCROW_ABI,
-                functionName: "raiseDispute",
+                address: ESCROW_CONTRACT_ADDRESS, abi: ESCROW_ABI, functionName: "raiseDispute",
                 args: [BigInt(job.contract_job_id), ipfsHash],
             }, {
                 onSuccess: async (txHash) => {
-                    console.log("✅ Dispute tx sent:", txHash);
-                    // Save dispute to database (metadata is safe to save early)
                     await supabase.from("disputes").insert({
-                        contract_dispute_id: 0,
-                        job_id: job.id,
-                        contract_job_id: job.contract_job_id,
-                        raised_by: address,
-                        reason: disputeReason,
-                        status: "RAISED",
+                        contract_dispute_id: 0, job_id: job.id,
+                        contract_job_id: job.contract_job_id, raised_by: address,
+                        reason: disputeReason, status: "RAISED",
                     });
-                    setPendingTxHash(txHash);
-                    setPendingAction("dispute");
+                    setPendingTxHash(txHash); setPendingAction("dispute");
                 },
-                onError: (error: Error) => {
-                    console.error("❌ Raise dispute error:", error);
-                    alert(`❌ Failed to raise dispute: ${error.message}`);
-                },
+                onError: (error: Error) => alert(`❌ Failed to raise dispute: ${error.message}`),
             });
-        } catch (error) {
-            console.error("Error raising dispute:", error);
-            alert("Failed to raise dispute");
-        }
+        } catch (error) { console.error("Error raising dispute:", error); alert("Failed to raise dispute"); }
     };
 
     const handleCancelJob = async () => {
         if (!job) return;
-
-        // Verify user is the client
         if (address?.toLowerCase() !== job.client?.toLowerCase()) {
-            alert("❌ Only the client who created this job can cancel it.\n\nYour wallet: " + address + "\nJob client: " + job.client);
+            alert("❌ Only the client who created this job can cancel it.");
             setShowCancelDialog(false);
             return;
         }
-
         setIsCancelling(true);
-
         try {
-            console.log("🔄 Cancelling job...");
-            console.log("Job ID:", job.contract_job_id);
-            console.log("Your wallet:", address);
-            console.log("Job client:", job.client);
-
             writeContract({
-                address: ESCROW_CONTRACT_ADDRESS,
-                abi: ESCROW_ABI,
-                functionName: "cancelJob",
-                args: [BigInt(job.contract_job_id)],
-                gas: 500000n, // Explicitly set gas limit to avoid estimation issues
+                address: ESCROW_CONTRACT_ADDRESS, abi: ESCROW_ABI, functionName: "cancelJob",
+                args: [BigInt(job.contract_job_id)], gas: 500000n,
             }, {
-                onSuccess: (txHash) => {
-                    console.log("✅ Cancel tx sent:", txHash);
-                    console.log("⏳ Waiting for confirmation...");
-                    setPendingTxHash(txHash);
-                    setPendingAction("cancel");
-                },
+                onSuccess: (txHash) => { setPendingTxHash(txHash); setPendingAction("cancel"); },
                 onError: (error: Error) => {
-                    console.error("❌ Cancellation error:", error);
-
-                    let errorMessage = error.message || "Unknown error";
-
-                    // Better error messages
-                    if (errorMessage.includes("Only client can cancel")) {
-                        errorMessage = "Only the job client can cancel this job. Please connect with the wallet that created it.";
-                    } else if (errorMessage.includes("Can only cancel open jobs")) {
-                        errorMessage = "This job cannot be cancelled because it's no longer in OPEN status.";
-                    } else if (errorMessage.includes("exceeds the configured cap")) {
-                        errorMessage = "Gas fee limit exceeded. Please:\n1. Make sure you have enough testnet POL\n2. Try increasing the gas limit in MetaMask (Edit > Advanced > Max fee = 2)";
-                    }
-
-                    alert(`❌ Failed to cancel job:\n\n${errorMessage}`);
+                    let msg = error.message || "Unknown error";
+                    if (msg.includes("Only client can cancel")) msg = "Only the job client can cancel this job.";
+                    else if (msg.includes("Can only cancel open jobs")) msg = "This job cannot be cancelled because it's no longer in OPEN status.";
+                    alert(`❌ Failed to cancel job:\n\n${msg}`);
                     setIsCancelling(false);
-                }
+                },
             });
         } catch (error) {
-            console.error("Error cancelling job:", error);
             alert(`Failed to cancel job: ${error instanceof Error ? error.message : "Unknown error"}`);
             setIsCancelling(false);
         }
@@ -420,10 +275,10 @@ export default function JobDetailsPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-[#050505]">
+            <div className="min-h-screen bg-black/90 text-white relative z-10 backdrop-blur-[2px]">
                 <Navbar />
-                <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                <div className="flex items-center justify-center py-40">
+                    <Loader2 className="w-12 h-12 animate-spin text-[#1DBF73]" />
                 </div>
             </div>
         );
@@ -431,10 +286,15 @@ export default function JobDetailsPage() {
 
     if (!job) {
         return (
-            <div className="min-h-screen bg-[#050505]">
+            <div className="min-h-screen bg-black text-white relative z-10">
                 <Navbar />
-                <div className="container mx-auto px-6 py-12 text-center">
-                    <p className="text-[#8888a0]">Job not found</p>
+                <div className="container mx-auto px-6 py-32 text-center max-w-lg">
+                    <div className="p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl">
+                        <p className="text-white/60 text-lg">Job not found or access denied.</p>
+                        <Button onClick={() => router.push("/jobs")} className="mt-6 bg-[#1DBF73] hover:bg-[#158a53] text-black font-bold">
+                            Return to Jobs
+                        </Button>
+                    </div>
                 </div>
             </div>
         );
@@ -450,229 +310,209 @@ export default function JobDetailsPage() {
     const canDispute = job.status === "SUBMITTED" && (isClient || isFreelancer);
     const canCancel = job.status === "OPEN" && isClient && isConnected;
     const canAccessChat =
-        Boolean(job.freelancer) &&
-        (isClient || isFreelancer) &&
+        Boolean(job.freelancer) && (isClient || isFreelancer) &&
         ["ACCEPTED", "SUBMITTED", "DISPUTED", "APPROVED", "RESOLVED"].includes(job.status);
     const isChatPhase = ["ACCEPTED", "SUBMITTED", "DISPUTED", "APPROVED", "RESOLVED"].includes(job.status);
     const isAwaitingAcceptConfirmation = pendingAction === "accept" && Boolean(pendingTxHash) && !txReceipt;
     const chatWithAddress = isClient ? job.freelancer : job.client;
-    const statusLabel = job.status === "WAITING_CLIENT_APPROVAL"
-        ? "PENDING CLIENT APPROVAL"
-        : job.status;
+    const statusLabel = job.status === "WAITING_CLIENT_APPROVAL" ? "PENDING APPROVAL" : job.status;
 
     return (
-        <div className="min-h-screen bg-[#050505]">
+        <div className="min-h-screen bg-black text-white relative z-10">
+            {/* Dark immersive background */}
+            <div className="fixed inset-0 pointer-events-none z-[-1]">
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#020617] via-[#051014] to-[#01030a]" />
+                <div className="absolute top-[20%] right-[10%] w-[600px] h-[600px] rounded-full bg-[#1DBF73]/5 blur-[120px]" />
+                <div className="absolute bottom-0 left-[10%] w-[800px] h-[400px] rounded-full bg-blue-900/5 blur-[120px]" />
+            </div>
+
             <Navbar />
 
-            <div className="w-full px-0 py-0">
-                <div className="grid lg:grid-cols-[320px_1fr] gap-0 items-start">
-                    <aside className="border-r border-[#1a1a24] bg-[#0d0d12] overflow-hidden lg:sticky lg:top-0 h-[calc(100vh-64px)]">
-                        <div className="px-5 py-4 border-b border-[#1a1a24] bg-[#101119]">
-                            <div className="flex items-start justify-between gap-3">
+            <div className="w-full">
+                <div className="grid lg:grid-cols-[400px_1fr] h-[calc(100vh-64px)]">
+
+                    {/* Sidebar Workspace */}
+                    <aside ref={sidebarRef} className="border-r border-white/10 bg-black/40 backdrop-blur-3xl overflow-hidden overflow-y-auto">
+                        <div className="px-8 py-8 border-b border-white/10 relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+                            <div className="flex items-start justify-between gap-4 relative">
                                 <div>
-                                    <p className="text-[11px] uppercase tracking-widest text-[#82839a]">Job Workspace</p>
-                                    <h1 className="text-xl font-semibold text-[#f0f0f5] mt-1 line-clamp-2">{job.title}</h1>
-                                    <p className="text-xs text-[#8f90a6] mt-1">Contract #{job.contract_job_id}</p>
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/40 mb-2 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#1DBF73]" /> Workspace
+                                    </p>
+                                    <h1 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-white to-white/70 leading-tight">{job.title}</h1>
+                                    <p className="text-[13px] font-medium text-white/40 mt-3 font-mono bg-white/5 py-1 px-2 rounded inline-block border border-white/5">CT #{job.contract_job_id}</p>
                                 </div>
-                                <Badge variant={
-                                    job.status === "OPEN" ? "success" :
-                                        job.status === "APPROVED" ? "success" :
-                                            job.status === "DISPUTED" ? "danger" :
-                                                "warning"
-                                }>
-                                    {statusLabel}
-                                </Badge>
+                                <div className="shrink-0">
+                                    <Badge variant="outline" className={`px-3 py-1.5 text-[10px] font-bold tracking-widest uppercase border ${
+                                        job.status === "OPEN" ? "bg-[#1DBF73]/10 text-[#1DBF73] border-[#1DBF73]/30" :
+                                        job.status === "APPROVED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" :
+                                        job.status === "DISPUTED" ? "bg-red-500/10 text-red-400 border-red-500/30" : "bg-indigo-500/10 text-indigo-400 border-indigo-500/30"
+                                    }`}>
+                                        {statusLabel}
+                                    </Badge>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="p-5 space-y-5">
-                            <div className="rounded-xl border border-[#252635] bg-[#12131b] p-3">
-                                <p className="text-xs text-[#8c8ea4] mb-2">Project Brief</p>
-                                <p className="text-sm text-[#d5d7e4] leading-relaxed line-clamp-4">{job.description}</p>
+                        <div className="p-8 space-y-6">
+                            <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-6 backdrop-blur-md">
+                                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/40 mb-4">Project Brief</p>
+                                <p className="text-[15px] font-light text-white/80 leading-[1.8] whitespace-pre-wrap">{job.description}</p>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="rounded-lg border border-[#242535] bg-[#11121a] px-3 py-2">
-                                    <p className="text-[11px] text-[#8b8ea1]">Amount</p>
-                                    <p className="text-sm font-semibold text-[#f0f0f5]">${formatUSDC(BigInt(job.amount))} USDC</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-6 backdrop-blur-md">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/40 mb-2">Amount</p>
+                                    <p className="text-2xl font-black text-[#1DBF73] drop-shadow-[0_0_12px_rgba(29,191,115,0.4)]">${formatUSDC(BigInt(job.amount))}</p>
                                 </div>
-                                <div className="rounded-lg border border-[#242535] bg-[#11121a] px-3 py-2">
-                                    <p className="text-[11px] text-[#8b8ea1]">Deadline</p>
-                                    <p className="text-sm font-semibold text-[#f0f0f5]">{new Date(job.deadline * 1000).toLocaleDateString()}</p>
+                                <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-6 backdrop-blur-md">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/40 mb-2">Deadline</p>
+                                    <p className="text-[17px] font-bold text-white mt-1">{new Date(job.deadline * 1000).toLocaleDateString()}</p>
                                 </div>
                             </div>
 
-                            <div className="rounded-lg border border-[#242535] bg-[#11121a] px-3 py-2 text-xs">
-                                <p className="text-[#f0f0f5]">Client: <span className="text-[#8f90a6]">{formatAddress(job.client)}</span></p>
-                                <p className="text-[#f0f0f5] mt-1">Freelancer: <span className="text-[#8f90a6]">{job.freelancer ? formatAddress(job.freelancer) : "Not assigned"}</span></p>
+                            <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-6 backdrop-blur-md space-y-4">
+                                <div>
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/40 mb-1">Client</p>
+                                    <a href={`https://polygonscan.com/address/${job.client}`} target="_blank" rel="noopener noreferrer" className="text-[14px] font-mono text-white/90 hover:text-[#1DBF73] transition-colors">{formatAddress(job.client)}</a>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/40 mb-1">Freelancer</p>
+                                    {job.freelancer ? (
+                                        <a href={`https://polygonscan.com/address/${job.freelancer}`} target="_blank" rel="noopener noreferrer" className="text-[14px] font-mono text-[#818cf8] hover:text-indigo-400 transition-colors">{formatAddress(job.freelancer)}</a>
+                                    ) : (
+                                        <p className="text-[14px] font-bold text-white/30 italic">Not Assigned</p>
+                                    )}
+                                </div>
                             </div>
 
-                            {job.description_ipfs && (
-                                <a
-                                    href={getIPFSUrl(job.description_ipfs)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-xs text-indigo-300 hover:text-indigo-200"
-                                >
-                                    View Description on IPFS <ExternalLink className="w-3.5 h-3.5" />
-                                </a>
+                            {(job.description_ipfs || job.deliverable_ipfs) && (
+                                <div className="space-y-3">
+                                    {job.description_ipfs && (
+                                        <a href={getIPFSUrl(job.description_ipfs)} target="_blank" rel="noopener noreferrer"
+                                            className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors group">
+                                            <span className="text-[13px] font-bold w-full">Brief Documents</span>
+                                            <ExternalLink className="w-4 h-4 text-white/40 group-hover:text-white" />
+                                        </a>
+                                    )}
+                                    {job.deliverable_ipfs && (
+                                        <a href={getIPFSUrl(job.deliverable_ipfs)} target="_blank" rel="noopener noreferrer"
+                                            className="flex items-center justify-between p-4 rounded-xl border border-[#1DBF73]/30 bg-[#1DBF73]/10 hover:bg-[#1DBF73]/20 transition-colors group">
+                                            <span className="text-[13px] font-bold text-[#1DBF73]">Final Deliverables</span>
+                                            <ExternalLink className="w-4 h-4 text-[#1DBF73]/60 group-hover:text-[#1DBF73]" />
+                                        </a>
+                                    )}
+                                </div>
                             )}
 
-                            {job.deliverable_ipfs && (
-                                <a
-                                    href={getIPFSUrl(job.deliverable_ipfs)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-xs text-emerald-300 hover:text-emerald-200"
-                                >
-                                    View Deliverable on IPFS <ExternalLink className="w-3.5 h-3.5" />
-                                </a>
-                            )}
-
-                            <div className="pt-2 border-t border-[#1f202b] space-y-3">
+                            <div className="pt-6 border-t border-white/10 space-y-4">
                                 {jobEventNotice && (
-                                    <div className="rounded-lg border border-emerald-600/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+                                    <div className="rounded-xl border border-[#1DBF73]/30 bg-[#1DBF73]/10 p-4 text-[13px] font-bold text-[#1DBF73]">
                                         {jobEventNotice}
                                     </div>
                                 )}
-
                                 {isAwaitingAcceptConfirmation && (
-                                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
-                                        Acceptance is pending on-chain confirmation.
+                                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-[13px] font-bold text-amber-500">
+                                        Acceptance is pending on-chain confirmation...
                                     </div>
                                 )}
 
                                 {canAccept && (
-                                    <div className="space-y-2">
-                                        <Button onClick={handleAcceptJob} disabled={isPending} className="w-full">
-                                            {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                    <div className="space-y-3">
+                                        <Button onClick={handleAcceptJob} disabled={isPending} className="w-full h-14 rounded-xl font-black uppercase tracking-wider bg-[#1DBF73] hover:bg-[#158a53] text-black shadow-[0_0_20px_rgba(29,191,115,0.4)]">
+                                            {isPending ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
                                             Accept Job
                                         </Button>
-                                        <div className="w-full rounded-lg border border-[#1a1a24] bg-[#0b0b10] px-3 py-2 text-xs text-[#8888a0]">
-                                            <span className="inline-flex items-center gap-1.5">
-                                                <MessageCircle className="w-3.5 h-3.5" />
-                                                Chat unlocks after client approval.
-                                            </span>
+                                        <div className="w-full rounded-xl border border-white/10 bg-white/5 p-4 text-[12px] font-medium text-white/50 text-center flex items-center justify-center gap-2">
+                                            <MessageCircle className="w-4 h-4" /> Chat unlocks upon client approval
                                         </div>
                                     </div>
                                 )}
 
                                 {canApproveFreelancer && (
-                                    <div className="space-y-2">
-                                        <div className="w-full rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs text-indigo-300">
-                                            Freelancer accepted on-chain. Approve to enable chat.
+                                    <div className="space-y-3">
+                                        <div className="w-full rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-[13px] font-bold text-indigo-400 text-center">
+                                            Freelancer accepted. Approve to start.
                                         </div>
-                                        <Button onClick={handleApproveFreelancerAcceptance} className="w-full gap-2">
-                                            <UserCheck className="w-4 h-4" />
-                                            Approve Freelancer
+                                        <Button onClick={handleApproveFreelancerAcceptance} className="w-full h-14 rounded-xl font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)]">
+                                            <UserCheck className="w-5 h-5 mr-2" /> Approve Freelancer
                                         </Button>
                                     </div>
                                 )}
 
                                 {isFreelancerWaitingApproval && (
-                                    <div className="w-full rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
-                                        Waiting for client approval.
+                                    <div className="w-full rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-[13px] font-bold text-indigo-400 text-center">
+                                        Waiting for client approval...
                                     </div>
                                 )}
 
                                 {canSubmit && (
-                                    <div className="space-y-2">
-                                        <Label>Upload Deliverable</Label>
-                                        <Input type="file" onChange={(e) => setDeliverableFile(e.target.files?.[0] || null)} />
-                                        <Button onClick={handleSubmitDeliverable} disabled={!deliverableFile || isPending} className="w-full gap-2">
-                                            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                                            Submit Deliverable
+                                    <div className="space-y-4 p-6 rounded-2xl border border-white/10 bg-white/5">
+                                        <Label className="text-[12px] font-bold uppercase tracking-widest text-white/50">Upload Delivery</Label>
+                                        <Input type="file" onChange={(e) => setDeliverableFile(e.target.files?.[0] || null)} className="bg-black/40 border-white/10 text-white" />
+                                        <Button onClick={handleSubmitDeliverable} disabled={!deliverableFile || isPending} className="w-full h-14 rounded-xl font-black uppercase tracking-wider bg-[#1DBF73] hover:bg-[#158a53] text-black shadow-[0_0_20px_rgba(29,191,115,0.4)] mt-2">
+                                            {isPending ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Upload className="w-5 h-5 mr-2" />}
+                                            Submit Final Work
                                         </Button>
                                     </div>
                                 )}
 
                                 {canApprove && (
-                                    <div className="space-y-2">
-                                        <Button onClick={handleApproveJob} disabled={isPending} className="w-full gap-2" variant="default">
-                                            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                            Approve & Release Funds
+                                    <div className="space-y-3">
+                                        <Button onClick={handleApproveJob} disabled={isPending} className="w-full h-14 rounded-xl font-black uppercase tracking-wider bg-[#1DBF73] hover:bg-[#158a53] text-black shadow-[0_0_20px_rgba(29,191,115,0.4)]">
+                                            {isPending ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <CheckCircle2 className="w-5 h-5 mr-2" />}
+                                            Approve Delivery & Release Funds
                                         </Button>
-                                        <Button onClick={() => setShowDisputeForm(!showDisputeForm)} variant="destructive" className="w-full gap-2">
-                                            <AlertTriangle className="w-4 h-4" />
-                                            Raise Dispute
+                                        <Button onClick={() => setShowDisputeForm(!showDisputeForm)} variant="outline" className="w-full h-12 rounded-xl font-bold uppercase tracking-wider text-red-400 border-red-500/30 hover:bg-red-500/10 mt-2">
+                                            <AlertTriangle className="w-4 h-4 mr-2" /> Raise Dispute
                                         </Button>
                                     </div>
                                 )}
 
                                 {showDisputeForm && canDispute && (
-                                    <div className="space-y-2 pt-2 border-t border-[#1a1a24]">
+                                    <div className="space-y-4 p-6 rounded-2xl border border-red-500/30 bg-red-500/5 mt-4">
                                         <div>
-                                            <Label>Dispute Reason</Label>
+                                            <Label className="text-[12px] font-bold uppercase tracking-widest text-red-400">Dispute Reason</Label>
                                             <Textarea
                                                 value={disputeReason}
                                                 onChange={(e) => setDisputeReason(e.target.value)}
-                                                placeholder="Explain why you're raising a dispute..."
-                                                rows={4}
-                                                className="mt-2"
+                                                placeholder="Explain the issue clearly..."
+                                                rows={4} className="mt-2 bg-black/40 border-red-500/20 text-white focus-visible:ring-red-500/50"
                                             />
                                         </div>
                                         <div>
-                                            <Label>Evidence</Label>
-                                            <Input
-                                                type="file"
-                                                onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
-                                                className="mt-2"
-                                            />
+                                            <Label className="text-[12px] font-bold uppercase tracking-widest text-red-400">Evidence Document</Label>
+                                            <Input type="file" onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)} className="mt-2 bg-black/40 border-red-500/20 text-white" />
                                         </div>
-                                        <Button
-                                            onClick={handleRaiseDispute}
-                                            disabled={!disputeReason || !evidenceFile || isPending}
-                                            variant="destructive"
-                                            className="w-full"
-                                        >
-                                            {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                        <Button onClick={handleRaiseDispute} disabled={!disputeReason || !evidenceFile || isPending} className="w-full h-12 mt-2 bg-red-500 hover:bg-red-600 text-white font-bold tracking-wider">
+                                            {isPending ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
                                             Submit Dispute
                                         </Button>
                                     </div>
                                 )}
 
                                 {canCancel && (
-                                    <Button
-                                        onClick={() => setShowCancelDialog(true)}
-                                        disabled={isCancelling || isPending}
-                                        variant="outline"
-                                        className="w-full gap-2 text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/10"
-                                    >
-                                        <XCircle className="w-4 h-4" />
-                                        Cancel Job & Get Refund
+                                    <Button onClick={() => setShowCancelDialog(true)} disabled={isCancelling || isPending}
+                                        variant="outline" className="w-full h-12 rounded-xl font-bold uppercase tracking-wider text-red-400 border-red-500/30 hover:bg-red-500/10 mt-6">
+                                        <XCircle className="w-4 h-4 mr-2" /> Cancel & Refund
                                     </Button>
-                                )}
-
-                                {isChatPhase && (
-                                    canAccessChat && chatWithAddress ? (
-                                        <Button
-                                            onClick={() => chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                                            variant="outline"
-                                            className="w-full gap-2"
-                                        >
-                                            <MessageCircle className="w-4 h-4" />
-                                            Chat with {formatAddress(chatWithAddress)}
-                                        </Button>
-                                    ) : (
-                                        <div className="w-full rounded-lg border border-[#1a1a24] bg-[#0b0b10] px-3 py-2 text-xs text-[#8888a0]">
-                                            Chat is available only to the client and approved freelancer.
-                                        </div>
-                                    )
                                 )}
                             </div>
                         </div>
                     </aside>
 
-                    <section ref={chatSectionRef} className="border-l border-[#1a1a24] bg-[#0d0d12] overflow-hidden h-[calc(100vh-64px)]">
-                        <div className="px-5 py-4 border-b border-[#1a1a24] bg-[#101119]">
-                            <p className="text-[11px] uppercase tracking-widest text-[#82839a]">Collaboration</p>
-                            <h2 className="text-lg font-semibold text-[#f0f0f5] mt-1">Client-Freelancer Chat Room</h2>
-                            <p className="text-xs text-[#8f90a6] mt-1">
-                                Chat and collaboration are enabled after client approval.
+                    {/* Chat Area */}
+                    <section ref={chatSectionRef} className="h-full bg-[#0a0f1e]/80 backdrop-blur-xl relative overflow-hidden flex flex-col border-l border-white/5">
+                        <div className="px-8 py-6 border-b border-white/10 bg-black/20 shrink-0 relative z-10">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/40 mb-1 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Collaboration
                             </p>
+                            <h2 className="text-xl font-extrabold text-white">Client-Freelancer Secure Chat</h2>
+                            <p className="text-[13px] font-medium text-white/40 mt-1">End-to-End Encrypted via XMTP</p>
                         </div>
 
-                        <div className="h-[calc(100%-80px)]">
+                        <div className="flex-1 overflow-hidden relative z-10 p-0 m-0 [&>div]:h-full [&>div]:bg-transparent">
                             {canAccessChat && job.freelancer ? (
                                 <JobXmtpChat
                                     currentUserAddress={address}
@@ -684,12 +524,14 @@ export default function JobDetailsPage() {
                                     jobId={job.id}
                                 />
                             ) : (
-                                <div className="h-full flex items-center justify-center px-6 text-center">
-                                    <div>
-                                        <MessageCircle className="w-10 h-10 text-[#666a84] mx-auto mb-3" />
-                                        <p className="text-[#f0f0f5] font-medium">Chat Not Available Yet</p>
-                                        <p className="text-sm text-[#8f90a6] mt-2">
-                                            Freelancer acceptance and client approval are required before this workspace becomes active.
+                                <div className="h-full flex items-center justify-center p-8 text-center bg-[url('/bg-pattern.svg')] bg-[size:40px_40px]">
+                                    <div className="w-full max-w-sm p-10 rounded-[2rem] border border-white/10 bg-black/40 backdrop-blur-2xl">
+                                        <div className="w-20 h-20 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center mx-auto mb-6 bg-white/5">
+                                            <MessageCircle className="w-8 h-8 text-white/40" />
+                                        </div>
+                                        <p className="text-xl font-bold text-white mb-2">Workspace Locked</p>
+                                        <p className="text-[14px] leading-[1.8] text-white/40">
+                                            Chat activates automatically once the freelancer accepts and the client approves.
                                         </p>
                                     </div>
                                 </div>
@@ -699,46 +541,31 @@ export default function JobDetailsPage() {
                 </div>
             </div>
 
-            {/* Cancel Job Confirmation Dialog */}
+            {/* Cancel Dialog */}
             <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-                <AlertDialogContent>
+                <AlertDialogContent className="bg-[#0f172a] border-white/10 text-white sm:rounded-[2rem]">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Cancel Job & Get Refund?</AlertDialogTitle>
-                        <AlertDialogDescription className="space-y-3">
-                            <p>
-                                This will immediately cancel the job and refund{" "}
-                                <strong className="text-[#f0f0f5]">
-                                    ${formatUSDC(BigInt(job?.amount || 0))} USDC
-                                </strong>{" "}
-                                to your wallet.
+                        <AlertDialogTitle className="text-2xl font-bold">Cancel Job?</AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-4 text-white/60">
+                            <p className="text-[15px] leading-relaxed">
+                                This will immediately cancel the job and refund the escrow.
                             </p>
-                            <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3 text-left">
-                                <p className="text-xs text-[#8888a0]">
-                                    <strong>Job:</strong> {job?.title}
-                                </p>
+                            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-left">
+                                <p className="text-2xl font-black text-red-400">${formatUSDC(BigInt(job?.amount || 0))} USDC</p>
+                                <p className="text-sm font-medium text-red-400/60 mt-1">Refund to your wallet</p>
                             </div>
-                            <p className="text-xs text-slate-500">
-                                This action cannot be undone. The job will be permanently cancelled.
+                            <p className="text-sm bg-white/5 p-3 rounded-xl border border-white/5">
+                                <strong>Job:</strong> {job?.title}
                             </p>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isCancelling}>
-                            Keep Job Active
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleCancelJob}
-                            disabled={isCancelling}
-                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-                        >
+                    <AlertDialogFooter className="mt-6 border-t border-white/5 pt-6">
+                        <AlertDialogCancel disabled={isCancelling} className="border-0 bg-white/10 text-white hover:bg-white/20 h-11 rounded-xl font-bold">Nevermind</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancelJob} disabled={isCancelling}
+                            className="bg-red-500 hover:bg-red-600 focus:ring-red-600 text-white h-11 rounded-xl font-bold shadow-[0_0_15px_rgba(239,68,68,0.4)]">
                             {isCancelling ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Processing Refund...
-                                </>
-                            ) : (
-                                "Yes, Cancel & Refund"
-                            )}
+                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+                            ) : "Confirm & Refund"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

@@ -1,0 +1,79 @@
+<svg width="800" height="500" viewBox="0 0 800 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="g1"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="g2"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <radialGradient id="rg1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1DBF73" stop-opacity="0.25"/><stop offset="100%" stop-color="#1DBF73" stop-opacity="0"/></radialGradient>
+    <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#1DBF73" stop-opacity="0.1"/><stop offset="50%" stop-color="#1DBF73" stop-opacity="0.9"/><stop offset="100%" stop-color="#1DBF73" stop-opacity="0.1"/></linearGradient>
+  </defs>
+  <!-- Grid -->
+  <g opacity="0.07">
+    <line x1="0" y1="50" x2="800" y2="50" stroke="#1DBF73" stroke-width="1"/>
+    <line x1="0" y1="150" x2="800" y2="150" stroke="#1DBF73" stroke-width="1"/>
+    <line x1="0" y1="250" x2="800" y2="250" stroke="#1DBF73" stroke-width="1"/>
+    <line x1="0" y1="350" x2="800" y2="350" stroke="#1DBF73" stroke-width="1"/>
+    <line x1="0" y1="450" x2="800" y2="450" stroke="#1DBF73" stroke-width="1"/>
+    <line x1="100" y1="0" x2="100" y2="500" stroke="#1DBF73" stroke-width="1"/>
+    <line x1="200" y1="0" x2="200" y2="500" stroke="#1DBF73" stroke-width="1"/>
+    <line x1="300" y1="0" x2="300" y2="500" stroke="#1DBF73" stroke-width="1"/>
+    <line x1="400" y1="0" x2="400" y2="500" stroke="#1DBF73" stroke-width="1"/>
+    <line x1="500" y1="0" x2="500" y2="500" stroke="#1DBF73" stroke-width="1"/>
+    <line x1="600" y1="0" x2="600" y2="500" stroke="#1DBF73" stroke-width="1"/>
+    <line x1="700" y1="0" x2="700" y2="500" stroke="#1DBF73" stroke-width="1"/>
+  </g>
+  <!-- Left wallet node -->
+  <circle cx="140" cy="250" r="70" fill="url(#rg1)"/>
+  <polygon points="140,195 181,218 181,264 140,287 99,264 99,218" fill="#020617" stroke="#1DBF73" stroke-width="2.5" filter="url(#g1)">
+    <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite"/>
+  </polygon>
+  <rect x="118" y="238" width="44" height="26" rx="4" fill="none" stroke="#1DBF73" stroke-width="2"/>
+  <line x1="118" y1="248" x2="162" y2="248" stroke="#1DBF73" stroke-width="2"/>
+  <circle cx="152" cy="256" r="4" fill="#1DBF73"/>
+  <circle cx="140" cy="250" r="62" fill="none" stroke="#1DBF73" stroke-width="1" stroke-opacity="0.3">
+    <animate attributeName="r" values="62;78;62" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.3;0;0.3" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Right wallet node -->
+  <circle cx="660" cy="250" r="70" fill="url(#rg1)"/>
+  <polygon points="660,195 701,218 701,264 660,287 619,264 619,218" fill="#020617" stroke="#1DBF73" stroke-width="2.5" filter="url(#g1)">
+    <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite" begin="1s"/>
+  </polygon>
+  <rect x="638" y="238" width="44" height="26" rx="4" fill="none" stroke="#1DBF73" stroke-width="2"/>
+  <line x1="638" y1="248" x2="682" y2="248" stroke="#1DBF73" stroke-width="2"/>
+  <circle cx="672" cy="256" r="4" fill="#1DBF73"/>
+  <circle cx="660" cy="250" r="62" fill="none" stroke="#1DBF73" stroke-width="1" stroke-opacity="0.3">
+    <animate attributeName="r" values="62;78;62" dur="3s" repeatCount="indefinite" begin="1s"/>
+    <animate attributeName="opacity" values="0.3;0;0.3" dur="3s" repeatCount="indefinite" begin="1s"/>
+  </circle>
+  <!-- Central shield -->
+  <circle cx="400" cy="250" r="90" fill="url(#rg1)"/>
+  <path d="M400,195 L438,213 L438,252 Q438,278 400,293 Q362,278 362,252 L362,213 Z" fill="#020617" stroke="#1DBF73" stroke-width="3" filter="url(#g2)">
+    <animate attributeName="stroke-opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"/>
+  </path>
+  <rect x="385" y="252" width="30" height="24" rx="3" fill="#1DBF73" opacity="0.85"/>
+  <path d="M388,245 L388,236 Q388,228 400,228 Q412,228 412,236 L412,245" fill="none" stroke="#1DBF73" stroke-width="3"/>
+  <circle cx="400" cy="260" r="3" fill="#020617"/>
+  <rect x="398.5" y="263" width="3" height="7" fill="#020617"/>
+  <circle cx="400" cy="250" r="68" fill="none" stroke="#1DBF73" stroke-width="1" stroke-opacity="0.2" stroke-dasharray="5,5">
+    <animateTransform attributeName="transform" type="rotate" from="0 400 250" to="360 400 250" dur="20s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Top connection lines -->
+  <path d="M185,228 Q290,175 362,222" fill="none" stroke="url(#lg1)" stroke-width="2.5" filter="url(#g1)"/>
+  <circle r="4" fill="#1DBF73" filter="url(#g2)"><animateMotion dur="2.5s" repeatCount="indefinite" path="M185,228 Q290,175 362,222"/></circle>
+  <path d="M438,222 Q510,175 615,228" fill="none" stroke="url(#lg1)" stroke-width="2.5" filter="url(#g1)"/>
+  <circle r="4" fill="#1DBF73" filter="url(#g2)"><animateMotion dur="2.5s" repeatCount="indefinite" begin="1.25s" path="M438,222 Q510,175 615,228"/></circle>
+  <!-- Bottom connection lines -->
+  <path d="M185,272 Q290,325 362,278" fill="none" stroke="url(#lg1)" stroke-width="2.5" filter="url(#g1)"/>
+  <circle r="4" fill="#1DBF73" filter="url(#g2)"><animateMotion dur="3s" repeatCount="indefinite" path="M185,272 Q290,325 362,278"/></circle>
+  <path d="M438,278 Q510,325 615,272" fill="none" stroke="url(#lg1)" stroke-width="2.5" filter="url(#g1)"/>
+  <circle r="4" fill="#1DBF73" filter="url(#g2)"><animateMotion dur="3s" repeatCount="indefinite" begin="1.5s" path="M438,278 Q510,325 615,272"/></circle>
+  <!-- Labels -->
+  <text x="140" y="340" text-anchor="middle" fill="#1DBF73" font-size="11" font-family="monospace" opacity="0.7">CLIENT</text>
+  <text x="400" y="340" text-anchor="middle" fill="#1DBF73" font-size="11" font-family="monospace" opacity="0.7">ESCROW</text>
+  <text x="660" y="340" text-anchor="middle" fill="#1DBF73" font-size="11" font-family="monospace" opacity="0.7">FREELANCER</text>
+  <circle cx="130" cy="358" r="4" fill="#1DBF73"><animate attributeName="opacity" values="1;0.2;1" dur="2s" repeatCount="indefinite"/></circle>
+  <text x="143" y="362" fill="#1DBF73" font-size="9" font-family="monospace" opacity="0.5">ACTIVE</text>
+  <circle cx="390" cy="358" r="4" fill="#1DBF73"><animate attributeName="opacity" values="1;0.2;1" dur="2s" repeatCount="indefinite" begin="0.6s"/></circle>
+  <text x="403" y="362" fill="#1DBF73" font-size="9" font-family="monospace" opacity="0.5">LOCKED</text>
+  <circle cx="650" cy="358" r="4" fill="#1DBF73"><animate attributeName="opacity" values="1;0.2;1" dur="2s" repeatCount="indefinite" begin="1.2s"/></circle>
+  <text x="663" y="362" fill="#1DBF73" font-size="9" font-family="monospace" opacity="0.5">PENDING</text>
+</svg>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import Navbar from "@/components/layout/Navbar";
 import {
@@ -11,8 +12,6 @@ import {
     Check, Plus, X, MapPin, Globe, Github, Twitter,
     DollarSign, Award, User, FileText,
 } from "lucide-react";
-
-// ─── Constants ────────────────────────────────────────────────────────────────
 
 const SKILLS = [
     "Solidity", "EVM", "Foundry", "Hardhat", "DeFi", "NFT", "Smart Contracts",
@@ -30,89 +29,53 @@ const EXPERIENCE_LEVELS = [
 
 const TOTAL_STEPS = 4;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const inputClass = "w-full px-4 py-3 rounded-xl bg-white border border-[#E4E5E7] text-[#404145] text-sm placeholder:text-[#95979D] outline-none transition-colors focus:border-[#1DBF73]";
 
 const StepDot = ({ index, current }: { index: number; current: number }) => (
     <div className="flex items-center gap-2">
-        <div
-            style={{
-                width: 28, height: 28, borderRadius: "50%",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "0.75rem", fontWeight: 700,
-                background: index < current
-                    ? "var(--accent)"
-                    : index === current
-                        ? "linear-gradient(135deg, #6366f1, #7c3aed)"
-                        : "rgba(255,255,255,0.05)",
-                border: index === current
-                    ? "2px solid #6366f1"
-                    : index < current
-                        ? "2px solid var(--accent)"
-                        : "2px solid rgba(255,255,255,0.1)",
-                color: index <= current ? "#fff" : "#666",
-                transition: "all 0.3s",
-            }}
-        >
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2 ${
+            index < current
+                ? "bg-[#1DBF73] border-[#1DBF73] text-white"
+                : index === current
+                    ? "bg-[#1DBF73] border-[#1DBF73] text-white"
+                    : "bg-[#F7F7F7] border-[#E4E5E7] text-[#95979D]"
+        }`}>
             {index < current ? <Check className="w-3.5 h-3.5" /> : index + 1}
         </div>
         {index < TOTAL_STEPS - 1 && (
-            <div style={{
-                height: 2, width: 40,
-                background: index < current
-                    ? "linear-gradient(90deg, #6366f1, #7c3aed)"
-                    : "rgba(255,255,255,0.08)",
-                borderRadius: 99, transition: "all 0.3s",
-            }} />
+            <div className={`h-0.5 w-10 rounded-full transition-all ${
+                index < current ? "bg-[#1DBF73]" : "bg-[#E4E5E7]"
+            }`} />
         )}
     </div>
 );
-
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function RegisterPage() {
     const { address, isConnected } = useAccount();
     const router = useRouter();
 
-    const [step, setStep] = useState(0);       // 0 = wallet, 1-4 = form steps
+    const [step, setStep] = useState(0);
     const [saving, setSaving] = useState(false);
     const [checking, setChecking] = useState(true);
 
     const [form, setForm] = useState({
         role: "" as "client" | "freelancer" | "both" | "",
-        display_name: "",
-        title: "",
-        bio: "",
-        location: "",
+        display_name: "", title: "", bio: "", location: "",
         skills: [] as string[],
         experience_level: "" as "entry" | "intermediate" | "expert" | "",
-        hourly_rate: "",
-        website: "",
-        github: "",
-        twitter: "",
+        hourly_rate: "", website: "", github: "", twitter: "",
     });
 
-    // Check if already registered → skip to jobs
     useEffect(() => {
-        if (!isConnected || !address) {
-            setChecking(false);
-            return;
-        }
-        supabase
-            .from("profiles")
-            .select("wallet, is_registered")
-            .eq("wallet", address.toLowerCase())
-            .single()
+        if (!isConnected || !address) { setChecking(false); return; }
+        supabase.from("profiles").select("wallet, is_registered")
+            .eq("wallet", address.toLowerCase()).single()
             .then(({ data }) => {
-                if (data?.is_registered) {
-                    router.replace("/jobs");
-                } else {
-                    setStep(1);   // wallet connected, go to step 1
-                    setChecking(false);
-                }
+                if (data?.is_registered) router.replace("/jobs");
+                else { setStep(1); setChecking(false); }
             });
     }, [isConnected, address, router]);
 
-    // When wallet connects mid-flow
     useEffect(() => {
         if (isConnected && step === 0) setStep(1);
     }, [isConnected, step]);
@@ -130,67 +93,62 @@ export default function RegisterPage() {
         if (!address) return;
         setSaving(true);
         await supabase.from("profiles").upsert({
-            wallet: address.toLowerCase(),
-            role: form.role || "freelancer",
-            display_name: form.display_name,
-            title: form.title,
-            bio: form.bio,
-            location: form.location,
-            skills: form.skills,
+            wallet: address.toLowerCase(), role: form.role || "freelancer",
+            display_name: form.display_name, title: form.title, bio: form.bio,
+            location: form.location, skills: form.skills,
             experience_level: form.experience_level || null,
             hourly_rate: form.hourly_rate ? parseFloat(form.hourly_rate) : null,
-            website: form.website,
-            github: form.github,
-            twitter: form.twitter,
-            is_registered: true,
-            updated_at: new Date().toISOString(),
+            website: form.website, github: form.github, twitter: form.twitter,
+            is_registered: true, updated_at: new Date().toISOString(),
         });
         setSaving(false);
         router.push("/jobs");
     };
 
-    // ── Loading state ──────────────────────────────────────────────────────────
     if (checking) {
         return (
-            <div style={{ background: "#0a0a0f", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", border: "2px solid #6366f1", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
-                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <div className="min-h-screen bg-backdrop flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full border-2 border-accent-indigo border-t-transparent animate-spin" />
             </div>
         );
     }
 
-    // ── Layout wrapper ─────────────────────────────────────────────────────────
     return (
-        <div style={{ background: "#0a0a0f", minHeight: "100vh" }}>
+        <div className="min-h-screen bg-backdrop">
             <Navbar />
 
             {/* Glow background */}
-            <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-                <div style={{ position: "absolute", top: "20%", left: "10%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)" }} />
-                <div style={{ position: "absolute", bottom: "10%", right: "10%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 70%)" }} />
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-[20%] left-[10%] w-[500px] h-[500px] rounded-full bg-accent-indigo/8 blur-3xl" />
+                <div className="absolute bottom-[10%] right-[10%] w-[400px] h-[400px] rounded-full bg-accent-violet/6 blur-3xl" />
             </div>
 
-            <main style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 80, paddingBottom: 80, paddingLeft: 24, paddingRight: 24 }}>
+            <main className="relative z-10 flex flex-col items-center pt-20 pb-20 px-6">
 
                 {/* Header */}
-                <div style={{ textAlign: "center", marginBottom: 48 }}>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 99, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", padding: "6px 16px", fontSize: "0.75rem", color: "#818cf8", marginBottom: 20, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#818cf8", animation: "pulse 2s infinite" }} />
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className="text-center mb-12"
+                >
+                    <div className="inline-flex items-center gap-2 rounded-full border border-[#1DBF73]/30 bg-[#E9F9F0] px-4 py-1.5 text-xs text-[#1DBF73] font-semibold tracking-widest uppercase mb-5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent-indigo animate-pulse" />
                         Create Your Account
                     </div>
-                    <h1 style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 700, color: "#f0f0f5", letterSpacing: "-0.03em", margin: 0 }}>
+                    <h1 className="font-heading text-[clamp(2rem,4vw,3rem)] font-bold text-text-primary tracking-tight">
                         {step === 0 ? "Connect your wallet" : "Set up your profile"}
                     </h1>
-                    <p style={{ color: "#8888a0", marginTop: 12, fontSize: "1rem" }}>
+                    <p className="text-text-muted mt-3 text-base">
                         {step === 0
                             ? "Your wallet is your identity on FairWork."
                             : "Tell the community who you are and what you do."}
                     </p>
-                </div>
+                </motion.div>
 
-                {/* Step dots — only show after wallet connected */}
+                {/* Step dots */}
                 {step > 0 && (
-                    <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
+                    <div className="flex items-center mb-10">
                         {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
                             <StepDot key={i} index={i} current={step - 1} />
                         ))}
@@ -198,287 +156,239 @@ export default function RegisterPage() {
                 )}
 
                 {/* Card */}
-                <div style={{
-                    width: "100%", maxWidth: 640,
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 20,
-                    padding: "40px 44px",
-                    backdropFilter: "blur(12px)",
-                }}>
-
-                    {/* ── STEP 0: Connect Wallet ───────────────────────────────── */}
-                    {step === 0 && (
-                        <div style={{ textAlign: "center" }}>
-                            <div style={{ width: 72, height: 72, borderRadius: 20, background: "linear-gradient(135deg, rgba(99,102,241,0.2), rgba(124,58,237,0.2))", border: "1px solid rgba(99,102,241,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 28px" }}>
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                                    <rect x="2" y="5" width="20" height="14" rx="2" stroke="#818cf8" strokeWidth="1.5" />
-                                    <path d="M16 12a1 1 0 1 0 2 0 1 1 0 0 0-2 0z" fill="#818cf8" />
-                                    <path d="M2 10h20" stroke="#818cf8" strokeWidth="1.5" />
-                                </svg>
-                            </div>
-                            <p style={{ color: "#8888a0", marginBottom: 32, lineHeight: 1.6 }}>
-                                No passwords, no emails. Your wallet address is your unique identity — all your jobs, earnings, and reputation are tied to it.
-                            </p>
-                            <div style={{ display: "flex", justifyContent: "center" }}>
-                                <ConnectButton label="Connect Wallet to Continue" showBalance={false} accountStatus="address" chainStatus="none" />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── STEP 1: Role ─────────────────────────────────────────── */}
-                    {step === 1 && (
-                        <div>
-                            <h2 style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "1.4rem", fontWeight: 700, color: "#f0f0f5", marginBottom: 8 }}>I want to...</h2>
-                            <p style={{ color: "#8888a0", fontSize: "0.9rem", marginBottom: 28 }}>You can always do both. Choose what describes you best.</p>
-
-                            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                                {[
-                                    { value: "client", icon: <Briefcase className="w-5 h-5" />, label: "Hire Talent", desc: "Post jobs and find skilled professionals for my Web3 projects." },
-                                    { value: "freelancer", icon: <Code2 className="w-5 h-5" />, label: "Find Work", desc: "Offer my skills and get paid securely in USDC via escrow." },
-                                    { value: "both", icon: <Layers className="w-5 h-5" />, label: "Both — Hire & Work", desc: "I post jobs AND take on freelance work." },
-                                ].map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        onClick={() => setForm((f) => ({ ...f, role: opt.value as "client" | "freelancer" | "both" }))}
-                                        style={{
-                                            display: "flex", alignItems: "flex-start", gap: 16,
-                                            padding: "18px 20px", borderRadius: 14, textAlign: "left",
-                                            border: form.role === opt.value
-                                                ? "1.5px solid #6366f1"
-                                                : "1.5px solid rgba(255,255,255,0.07)",
-                                            background: form.role === opt.value
-                                                ? "rgba(99,102,241,0.1)"
-                                                : "rgba(255,255,255,0.02)",
-                                            cursor: "pointer", transition: "all 0.2s", fontFamily: "inherit",
-                                        }}
-                                    >
-                                        <div style={{
-                                            width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                                            background: form.role === opt.value ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.05)",
-                                            border: form.role === opt.value ? "1px solid rgba(99,102,241,0.4)" : "1px solid rgba(255,255,255,0.08)",
-                                            display: "flex", alignItems: "center", justifyContent: "center",
-                                            color: form.role === opt.value ? "#818cf8" : "#555",
-                                        }}>
-                                            {opt.icon}
-                                        </div>
-                                        <div>
-                                            <p style={{ fontWeight: 700, color: form.role === opt.value ? "#f0f0f5" : "#aaa", fontSize: "0.95rem", margin: 0 }}>{opt.label}</p>
-                                            <p style={{ color: "#666", fontSize: "0.82rem", marginTop: 4, lineHeight: 1.5 }}>{opt.desc}</p>
-                                        </div>
-                                        {form.role === opt.value && (
-                                            <div style={{ marginLeft: "auto", width: 22, height: 22, borderRadius: "50%", background: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                                <Check className="w-3.5 h-3.5" style={{ color: "#fff" }} />
-                                            </div>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── STEP 2: Basic Info ───────────────────────────────────── */}
-                    {step === 2 && (
-                        <div>
-                            <h2 style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "1.4rem", fontWeight: 700, color: "#f0f0f5", marginBottom: 8 }}>Basic Information</h2>
-                            <p style={{ color: "#8888a0", fontSize: "0.9rem", marginBottom: 28 }}>This is how clients and freelancers will know you.</p>
-
-                            {[
-                                { icon: <User className="w-4 h-4" />, label: "Display Name *", key: "display_name", placeholder: "e.g. Alex Rivera", required: true },
-                                { icon: <Award className="w-4 h-4" />, label: "Professional Title *", key: "title", placeholder: "e.g. Smart Contract Developer" },
-                                { icon: <MapPin className="w-4 h-4" />, label: "Location", key: "location", placeholder: "e.g. San Francisco, CA" },
-                            ].map((f) => (
-                                <div key={f.key} style={{ marginBottom: 20 }}>
-                                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.82rem", fontWeight: 600, color: "#8888a0", marginBottom: 8, letterSpacing: "0.04em" }}>
-                                        <span style={{ color: "#555" }}>{f.icon}</span> {f.label}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={form[f.key as keyof typeof form] as string}
-                                        onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                                        placeholder={f.placeholder}
-                                        style={{
-                                            width: "100%", padding: "12px 16px", borderRadius: 10,
-                                            background: "rgba(255,255,255,0.04)",
-                                            border: "1.5px solid rgba(255,255,255,0.08)",
-                                            color: "#f0f0f5", fontSize: "0.92rem", outline: "none",
-                                            boxSizing: "border-box", fontFamily: "inherit",
-                                            transition: "border-color 0.2s",
-                                        }}
-                                        onFocus={(e) => { e.target.style.borderColor = "#6366f1"; }}
-                                        onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.08)"; }}
-                                    />
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.05, ease: "easeOut" }}
+                    className="w-full max-w-[640px] bg-white border border-[#E4E5E7] rounded-2xl px-11 py-10 shadow-card"
+                >
+                    <AnimatePresence mode="wait">
+                        {/* STEP 0: Connect Wallet */}
+                        {step === 0 && (
+                            <motion.div key="step0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center">
+                                <div className="w-18 h-18 rounded-2xl bg-gradient-to-br from-accent-indigo/20 to-accent-violet/20 border border-accent-indigo/30 flex items-center justify-center mx-auto mb-7" style={{ width: 72, height: 72 }}>
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                        <rect x="2" y="5" width="20" height="14" rx="2" stroke="#818cf8" strokeWidth="1.5" />
+                                        <path d="M16 12a1 1 0 1 0 2 0 1 1 0 0 0-2 0z" fill="#818cf8" />
+                                        <path d="M2 10h20" stroke="#818cf8" strokeWidth="1.5" />
+                                    </svg>
                                 </div>
-                            ))}
+                                <p className="text-text-muted mb-8 leading-relaxed">
+                                    No passwords, no emails. Your wallet address is your unique identity — all your jobs, earnings, and reputation are tied to it.
+                                </p>
+                                <div className="flex justify-center">
+                                    <ConnectButton label="Connect Wallet to Continue" showBalance={false} accountStatus="address" chainStatus="none" />
+                                </div>
+                            </motion.div>
+                        )}
 
-                            {/* Bio */}
-                            <div style={{ marginBottom: 20 }}>
-                                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.82rem", fontWeight: 600, color: "#8888a0", marginBottom: 8, letterSpacing: "0.04em" }}>
-                                    <FileText className="w-4 h-4" style={{ color: "#555" }} /> Bio *
-                                </label>
-                                <textarea
-                                    value={form.bio}
-                                    onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-                                    placeholder="Tell clients about your background, what you specialize in, and what makes you stand out..."
-                                    rows={4}
-                                    style={{
-                                        width: "100%", padding: "12px 16px", borderRadius: 10,
-                                        background: "rgba(255,255,255,0.04)",
-                                        border: "1.5px solid rgba(255,255,255,0.08)",
-                                        color: "#f0f0f5", fontSize: "0.92rem", outline: "none",
-                                        resize: "vertical", boxSizing: "border-box", fontFamily: "inherit",
-                                        transition: "border-color 0.2s",
-                                    }}
-                                    onFocus={(e) => { e.target.style.borderColor = "#6366f1"; }}
-                                    onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.08)"; }}
-                                />
-                            </div>
-                        </div>
-                    )}
+                        {/* STEP 1: Role */}
+                        {step === 1 && (
+                            <motion.div key="step1" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.25 }}>
+                                <h2 className="font-heading text-[1.4rem] font-bold text-text-primary mb-2">I want to...</h2>
+                                <p className="text-text-muted text-sm mb-7">You can always do both. Choose what describes you best.</p>
 
-                    {/* ── STEP 3: Skills & Experience ──────────────────────────── */}
-                    {step === 3 && (
-                        <div>
-                            <h2 style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "1.4rem", fontWeight: 700, color: "#f0f0f5", marginBottom: 8 }}>Skills & Experience</h2>
-                            <p style={{ color: "#8888a0", fontSize: "0.9rem", marginBottom: 28 }}>Help clients find you. Select up to 10 skills.</p>
-
-                            {/* Skills picker */}
-                            <div style={{ marginBottom: 28 }}>
-                                <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#8888a0", marginBottom: 10, letterSpacing: "0.04em", display: "block" }}>
-                                    Skills <span style={{ color: "#555", fontWeight: 400 }}>({form.skills.length}/10 selected)</span>
-                                </label>
-                                {form.skills.length > 0 && (
-                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                                        {form.skills.map((s) => (
-                                            <button key={s} onClick={() => toggleSkill(s)}
-                                                style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 99, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.35)", color: "#818cf8", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-                                                {s} <X className="w-3 h-3" />
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-                                    {SKILLS.filter((s) => !form.skills.includes(s)).map((s) => (
-                                        <button key={s} onClick={() => toggleSkill(s)}
-                                            style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 99, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.02)", color: "#8888a0", fontSize: "0.78rem", cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}
-                                            onMouseEnter={(e) => { (e.target as HTMLElement).style.borderColor = "rgba(99,102,241,0.4)"; (e.target as HTMLElement).style.color = "#818cf8"; }}
-                                            onMouseLeave={(e) => { (e.target as HTMLElement).style.borderColor = "rgba(255,255,255,0.1)"; (e.target as HTMLElement).style.color = "#8888a0"; }}>
-                                            <Plus className="w-3 h-3" /> {s}
+                                <div className="flex flex-col gap-3">
+                                    {[
+                                        { value: "client", icon: <Briefcase className="w-5 h-5" />, label: "Hire Talent", desc: "Post jobs and find skilled professionals for my Web3 projects." },
+                                        { value: "freelancer", icon: <Code2 className="w-5 h-5" />, label: "Find Work", desc: "Offer my skills and get paid securely in USDC via escrow." },
+                                        { value: "both", icon: <Layers className="w-5 h-5" />, label: "Both — Hire & Work", desc: "I post jobs AND take on freelance work." },
+                                    ].map((opt) => (
+                                        <button
+                                            key={opt.value}
+                                            onClick={() => setForm((f) => ({ ...f, role: opt.value as "client" | "freelancer" | "both" }))}
+                                            className={`flex items-start gap-4 p-5 rounded-xl text-left transition-all border-[1.5px] ${
+                                                form.role === opt.value
+                                                    ? "border-[#1DBF73] bg-[#E9F9F0]"
+                                                    : "border-[#E4E5E7] bg-white hover:border-[#1DBF73]/40"
+                                            }`}
+                                        >
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all border ${
+                                                form.role === opt.value
+                                                    ? "bg-[#E9F9F0] border-[#1DBF73]/40 text-[#1DBF73]"
+                                                    : "bg-[#F7F7F7] border-[#E4E5E7] text-[#95979D]"
+                                            }`}>
+                                                {opt.icon}
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className={`font-bold text-[0.95rem] ${form.role === opt.value ? "text-text-primary" : "text-text-muted"}`}>{opt.label}</p>
+                                                <p className="text-text-subtle text-[0.82rem] mt-1 leading-relaxed">{opt.desc}</p>
+                                            </div>
+                                            {form.role === opt.value && (
+                                                <div className="w-5 h-5 rounded-full bg-accent-indigo flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                    <Check className="w-3 h-3 text-white" />
+                                                </div>
+                                            )}
                                         </button>
                                     ))}
                                 </div>
-                            </div>
+                            </motion.div>
+                        )}
 
-                            {/* Experience Level */}
-                            {(form.role === "freelancer" || form.role === "both") && (
-                                <div style={{ marginBottom: 28 }}>
-                                    <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#8888a0", marginBottom: 10, letterSpacing: "0.04em", display: "block" }}>Experience Level</label>
-                                    <div style={{ display: "flex", gap: 10 }}>
-                                        {EXPERIENCE_LEVELS.map((lvl) => (
-                                            <button key={lvl.value} onClick={() => setForm((f) => ({ ...f, experience_level: lvl.value as "entry" | "intermediate" | "expert" }))}
-                                                style={{
-                                                    flex: 1, padding: "12px 8px", borderRadius: 10, textAlign: "center",
-                                                    border: form.experience_level === lvl.value ? "1.5px solid #6366f1" : "1.5px solid rgba(255,255,255,0.07)",
-                                                    background: form.experience_level === lvl.value ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.02)",
-                                                    cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s",
-                                                }}>
-                                                <p style={{ fontWeight: 700, color: form.experience_level === lvl.value ? "#f0f0f5" : "#888", fontSize: "0.82rem", margin: 0 }}>{lvl.label}</p>
-                                                <p style={{ color: "#555", fontSize: "0.72rem", marginTop: 4, lineHeight: 1.4 }}>{lvl.desc}</p>
+                        {/* STEP 2: Basic Info */}
+                        {step === 2 && (
+                            <motion.div key="step2" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.25 }}>
+                                <h2 className="font-heading text-[1.4rem] font-bold text-text-primary mb-2">Basic Information</h2>
+                                <p className="text-text-muted text-sm mb-7">This is how clients and freelancers will know you.</p>
+
+                                {[
+                                    { icon: <User className="w-4 h-4" />, label: "Display Name *", key: "display_name", placeholder: "e.g. Alex Rivera" },
+                                    { icon: <Award className="w-4 h-4" />, label: "Professional Title *", key: "title", placeholder: "e.g. Smart Contract Developer" },
+                                    { icon: <MapPin className="w-4 h-4" />, label: "Location", key: "location", placeholder: "e.g. San Francisco, CA" },
+                                ].map((f) => (
+                                    <div key={f.key} className="mb-5">
+                                        <label className="flex items-center gap-1.5 text-[0.82rem] font-semibold text-text-muted mb-2 tracking-wide uppercase text-[11px]">
+                                            <span className="text-text-subtle">{f.icon}</span> {f.label}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={form[f.key as keyof typeof form] as string}
+                                            onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                                            placeholder={f.placeholder}
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                ))}
+
+                                <div className="mb-5">
+                                    <label className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted mb-2 tracking-wide uppercase">
+                                        <FileText className="w-4 h-4 text-text-subtle" /> Bio *
+                                    </label>
+                                    <textarea
+                                        value={form.bio}
+                                        onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+                                        placeholder="Tell clients about your background, what you specialize in, and what makes you stand out..."
+                                        rows={4}
+                                        className={`${inputClass} resize-vertical`}
+                                    />
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* STEP 3: Skills & Experience */}
+                        {step === 3 && (
+                            <motion.div key="step3" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.25 }}>
+                                <h2 className="font-heading text-[1.4rem] font-bold text-text-primary mb-2">Skills & Experience</h2>
+                                <p className="text-text-muted text-sm mb-7">Help clients find you. Select up to 10 skills.</p>
+
+                                {/* Skills picker */}
+                                <div className="mb-7">
+                                    <label className="text-[11px] font-semibold text-text-muted mb-2.5 tracking-wide uppercase block">
+                                        Skills <span className="text-text-subtle font-normal">({form.skills.length}/10 selected)</span>
+                                    </label>
+                                    {form.skills.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mb-3">
+                                            {form.skills.map((s) => (
+                                                <button key={s} onClick={() => toggleSkill(s)}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-indigo/15 border border-accent-indigo/35 text-[#1DBF73] text-[0.8rem] font-semibold hover:bg-accent-indigo/25 transition-all">
+                                                    {s} <X className="w-3 h-3" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {SKILLS.filter((s) => !form.skills.includes(s)).map((s) => (
+                                            <button key={s} onClick={() => toggleSkill(s)}
+                                                className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#E4E5E7] bg-white text-[#74767E] text-[0.78rem] hover:border-[#1DBF73]/40 hover:text-[#1DBF73] transition-all">
+                                                <Plus className="w-3 h-3" /> {s}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Hourly Rate */}
-                            {(form.role === "freelancer" || form.role === "both") && (
-                                <div>
-                                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.82rem", fontWeight: 600, color: "#8888a0", marginBottom: 8, letterSpacing: "0.04em" }}>
-                                        <DollarSign className="w-4 h-4" style={{ color: "#555" }} /> Hourly Rate (USDC) <span style={{ color: "#555", fontWeight: 400 }}>— optional</span>
-                                    </label>
-                                    <div style={{ position: "relative" }}>
-                                        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#555", fontSize: "0.9rem" }}>$</span>
-                                        <input
-                                            type="number"
-                                            value={form.hourly_rate}
-                                            onChange={(e) => setForm((f) => ({ ...f, hourly_rate: e.target.value }))}
-                                            placeholder="e.g. 75"
-                                            style={{
-                                                width: "100%", padding: "12px 16px 12px 28px", borderRadius: 10,
-                                                background: "rgba(255,255,255,0.04)",
-                                                border: "1.5px solid rgba(255,255,255,0.08)",
-                                                color: "#f0f0f5", fontSize: "0.92rem", outline: "none",
-                                                boxSizing: "border-box", fontFamily: "inherit",
-                                            }}
-                                            onFocus={(e) => { e.target.style.borderColor = "#6366f1"; }}
-                                            onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.08)"; }}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ── STEP 4: Social / Portfolio Links ─────────────────────── */}
-                    {step === 4 && (
-                        <div>
-                            <h2 style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "1.4rem", fontWeight: 700, color: "#f0f0f5", marginBottom: 8 }}>Portfolio & Links</h2>
-                            <p style={{ color: "#8888a0", fontSize: "0.9rem", marginBottom: 28 }}>Optional — builds trust and credibility with clients.</p>
-
-                            {[
-                                { icon: <Globe className="w-4 h-4" />, label: "Website / Portfolio", key: "website", placeholder: "https://yoursite.com" },
-                                { icon: <Github className="w-4 h-4" />, label: "GitHub Username", key: "github", placeholder: "yourusername" },
-                                { icon: <Twitter className="w-4 h-4" />, label: "Twitter / X Handle", key: "twitter", placeholder: "yourhandle (without @)" },
-                            ].map((f) => (
-                                <div key={f.key} style={{ marginBottom: 20 }}>
-                                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.82rem", fontWeight: 600, color: "#8888a0", marginBottom: 8, letterSpacing: "0.04em" }}>
-                                        <span style={{ color: "#555" }}>{f.icon}</span> {f.label}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={form[f.key as keyof typeof form] as string}
-                                        onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                                        placeholder={f.placeholder}
-                                        style={{
-                                            width: "100%", padding: "12px 16px", borderRadius: 10,
-                                            background: "rgba(255,255,255,0.04)",
-                                            border: "1.5px solid rgba(255,255,255,0.08)",
-                                            color: "#f0f0f5", fontSize: "0.92rem", outline: "none",
-                                            boxSizing: "border-box", fontFamily: "inherit",
-                                            transition: "border-color 0.2s",
-                                        }}
-                                        onFocus={(e) => { e.target.style.borderColor = "#6366f1"; }}
-                                        onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.08)"; }}
-                                    />
-                                </div>
-                            ))}
-
-                            {/* Summary preview */}
-                            <div style={{ marginTop: 12, padding: 16, borderRadius: 12, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.15)" }}>
-                                <p style={{ fontSize: "0.78rem", fontWeight: 700, color: "#818cf8", marginBottom: 8, letterSpacing: "0.06em", textTransform: "uppercase" }}>Profile Summary</p>
-                                <p style={{ color: "#f0f0f5", fontWeight: 600, fontSize: "0.9rem" }}>{form.display_name || "—"}</p>
-                                <p style={{ color: "#8888a0", fontSize: "0.82rem", marginTop: 2 }}>{form.title || "—"}</p>
-                                {form.skills.length > 0 && (
-                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-                                        {form.skills.slice(0, 5).map((s) => (
-                                            <span key={s} style={{ padding: "3px 10px", borderRadius: 99, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: "0.75rem", fontWeight: 600 }}>{s}</span>
-                                        ))}
-                                        {form.skills.length > 5 && <span style={{ color: "#555", fontSize: "0.75rem", alignSelf: "center" }}>+{form.skills.length - 5} more</span>}
+                                {/* Experience Level */}
+                                {(form.role === "freelancer" || form.role === "both") && (
+                                    <div className="mb-7">
+                                        <label className="text-[11px] font-semibold text-text-muted mb-2.5 tracking-wide uppercase block">Experience Level</label>
+                                        <div className="flex gap-2.5">
+                                            {EXPERIENCE_LEVELS.map((lvl) => (
+                                                <button key={lvl.value}
+                                                    onClick={() => setForm((f) => ({ ...f, experience_level: lvl.value as "entry" | "intermediate" | "expert" }))}
+                                                    className={`flex-1 px-3 py-3 rounded-xl text-center transition-all border-[1.5px] ${
+                                                        form.experience_level === lvl.value
+                                                            ? "border-accent-indigo bg-accent-indigo/10"
+                                                            : "border-[#E4E5E7] bg-white hover:border-[#1DBF73]/40"
+                                                    }`}>
+                                                    <p className={`font-bold text-[0.82rem] ${form.experience_level === lvl.value ? "text-text-primary" : "text-text-muted"}`}>{lvl.label}</p>
+                                                    <p className="text-text-subtle text-[0.72rem] mt-1 leading-snug">{lvl.desc}</p>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
-                            </div>
-                        </div>
-                    )}
 
-                </div>
+                                {/* Hourly Rate */}
+                                {(form.role === "freelancer" || form.role === "both") && (
+                                    <div>
+                                        <label className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted mb-2 tracking-wide uppercase">
+                                            <DollarSign className="w-4 h-4 text-text-subtle" />
+                                            Hourly Rate (USDC) <span className="text-text-subtle font-normal">— optional</span>
+                                        </label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-subtle text-sm">$</span>
+                                            <input
+                                                type="number" value={form.hourly_rate}
+                                                onChange={(e) => setForm((f) => ({ ...f, hourly_rate: e.target.value }))}
+                                                placeholder="e.g. 75"
+                                                className={`${inputClass} pl-8`}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
 
-                {/* Navigation buttons */}
+                        {/* STEP 4: Links */}
+                        {step === 4 && (
+                            <motion.div key="step4" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.25 }}>
+                                <h2 className="font-heading text-[1.4rem] font-bold text-text-primary mb-2">Portfolio & Links</h2>
+                                <p className="text-text-muted text-sm mb-7">Optional — builds trust and credibility with clients.</p>
+
+                                {[
+                                    { icon: <Globe className="w-4 h-4" />, label: "Website / Portfolio", key: "website", placeholder: "https://yoursite.com" },
+                                    { icon: <Github className="w-4 h-4" />, label: "GitHub Username", key: "github", placeholder: "yourusername" },
+                                    { icon: <Twitter className="w-4 h-4" />, label: "Twitter / X Handle", key: "twitter", placeholder: "yourhandle (without @)" },
+                                ].map((f) => (
+                                    <div key={f.key} className="mb-5">
+                                        <label className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted mb-2 tracking-wide uppercase">
+                                            <span className="text-text-subtle">{f.icon}</span> {f.label}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={form[f.key as keyof typeof form] as string}
+                                            onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                                            placeholder={f.placeholder}
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                ))}
+
+                                {/* Profile Summary */}
+                                <div className="mt-3 p-4 rounded-xl bg-[#E9F9F0] border border-[#1DBF73]/20">
+                                    <p className="text-[11px] font-bold text-[#1DBF73] mb-2 tracking-widest uppercase">Profile Summary</p>
+                                    <p className="text-text-primary font-semibold text-[0.9rem]">{form.display_name || "—"}</p>
+                                    <p className="text-text-muted text-[0.82rem] mt-0.5">{form.title || "—"}</p>
+                                    {form.skills.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 mt-2.5">
+                                            {form.skills.slice(0, 5).map((s) => (
+                                                <span key={s} className="px-2.5 py-1 rounded-full bg-accent-indigo/15 text-[#1DBF73] text-[0.75rem] font-semibold">{s}</span>
+                                            ))}
+                                            {form.skills.length > 5 && <span className="text-text-subtle text-[0.75rem] self-center">+{form.skills.length - 5} more</span>}
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
+
+                {/* Navigation */}
                 {step > 0 && (
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", maxWidth: 640, marginTop: 24, gap: 12 }}>
+                    <div className="flex justify-between items-center w-full max-w-[640px] mt-6 gap-3">
                         {step > 1 ? (
                             <button
                                 onClick={() => setStep((s) => s - 1)}
-                                style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 24px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,0.1)", background: "transparent", color: "#8888a0", fontSize: "0.9rem", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}
+                                className="flex items-center gap-2 px-6 py-3 rounded-xl border border-[#E4E5E7] bg-white text-[#74767E] text-sm font-semibold hover:border-[#1DBF73]/40 hover:text-[#404145] transition-all"
                             >
                                 <ChevronLeft className="w-4 h-4" /> Back
                             </button>
@@ -488,16 +398,11 @@ export default function RegisterPage() {
                             <button
                                 onClick={() => setStep((s) => s + 1)}
                                 disabled={step === 1 && !form.role}
-                                style={{
-                                    display: "flex", alignItems: "center", gap: 8,
-                                    padding: "12px 32px", borderRadius: 10,
-                                    background: step === 1 && !form.role ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #6366f1, #7c3aed)",
-                                    color: step === 1 && !form.role ? "#444" : "#fff",
-                                    fontSize: "0.9rem", fontWeight: 700, cursor: step === 1 && !form.role ? "not-allowed" : "pointer",
-                                    border: "none", fontFamily: "inherit",
-                                    boxShadow: step === 1 && !form.role ? "none" : "0 4px 20px rgba(99,102,241,0.35)",
-                                    transition: "all 0.2s",
-                                }}
+                                className={`flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-bold transition-all ${
+                                    step === 1 && !form.role
+                                        ? "bg-[#F7F7F7] text-[#95979D] cursor-not-allowed"
+                                        : "bg-[#1DBF73] hover:bg-[#19A463] text-white shadow-card"
+                                }`}
                             >
                                 Continue <ChevronRight className="w-4 h-4" />
                             </button>
@@ -505,41 +410,27 @@ export default function RegisterPage() {
                             <button
                                 onClick={handleFinish}
                                 disabled={saving}
-                                style={{
-                                    display: "flex", alignItems: "center", gap: 8,
-                                    padding: "12px 32px", borderRadius: 10,
-                                    background: saving ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #6366f1, #7c3aed)",
-                                    color: saving ? "#444" : "#fff",
-                                    fontSize: "0.9rem", fontWeight: 700,
-                                    cursor: saving ? "not-allowed" : "pointer",
-                                    border: "none", fontFamily: "inherit",
-                                    boxShadow: saving ? "none" : "0 4px 20px rgba(99,102,241,0.35)",
-                                }}
+                                className={`flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-bold transition-all ${
+                                    saving
+                                        ? "bg-[#F7F7F7] text-[#95979D] cursor-not-allowed"
+                                        : "bg-[#1DBF73] hover:bg-[#19A463] text-white shadow-card"
+                                }`}
                             >
-                                {saving ? "Creating Profile…" : "Complete Registration"}
-                                {!saving && <Check className="w-4 h-4" />}
+                                {saving ? "Creating Profile…" : <><Check className="w-4 h-4" /> Complete Registration</>}
                             </button>
                         )}
                     </div>
                 )}
 
-                {/* Skip link for existing users */}
                 {step > 0 && (
-                    <p style={{ marginTop: 20, color: "#444", fontSize: "0.82rem" }}>
+                    <p className="mt-5 text-text-subtle text-[0.82rem]">
                         Already have an account?{" "}
-                        <button onClick={() => router.push("/jobs")} style={{ color: "#6366f1", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "inherit" }}>
+                        <button onClick={() => router.push("/jobs")} className="text-accent-indigo hover:text-[#1DBF73] transition-colors">
                             Go to Jobs →
                         </button>
                     </p>
                 )}
-
             </main>
-
-            <style>{`
-                @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-                input::placeholder, textarea::placeholder { color: #444; }
-                input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-            `}</style>
         </div>
     );
 }

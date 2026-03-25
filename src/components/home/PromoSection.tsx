@@ -7,7 +7,6 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowRight } from "lucide-react";
 
-gsap.registerPlugin(ScrollTrigger);
 
 interface PromoSectionProps {
     variant: "web3" | "escrow";
@@ -17,6 +16,7 @@ export default function PromoSection({ variant }: PromoSectionProps) {
     const sectionRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        gsap.registerPlugin(ScrollTrigger);
         const ctx = gsap.context(() => {
             const content = sectionRef.current?.querySelectorAll(".promo-reveal");
             if (!content) return;

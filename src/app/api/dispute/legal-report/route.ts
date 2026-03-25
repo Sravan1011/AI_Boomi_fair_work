@@ -202,7 +202,12 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error("Legal report generation error:", error);
         return NextResponse.json(
-            { error: "Failed to generate legal report", details: error instanceof Error ? error.message : String(error) },
+            {
+                error: "Failed to generate legal report",
+                ...(process.env.NODE_ENV !== "production" && {
+                    details: error instanceof Error ? error.message : String(error),
+                }),
+            },
             { status: 500 }
         );
     }

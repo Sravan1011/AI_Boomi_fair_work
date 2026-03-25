@@ -136,8 +136,8 @@ function EvidencePill({ icon: Icon, label, count, active }: {
     return (
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium
             ${active
-                ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-300"
-                : "border-[#1a1a24] bg-[#0a0a0f] text-[#55556a]"
+                ? "border-[#1DBF73]/40 bg-[#E9F9F0] text-[#19A463]"
+                : "border-[#E4E5E7] bg-[#F7F7F7] text-[#95979D]"
             }`}>
             <Icon className="w-3.5 h-3.5" />
             <span>{label}</span>

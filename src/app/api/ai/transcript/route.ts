@@ -152,7 +152,9 @@ Analyze this conversation and return the structured project transcript JSON.`;
         return NextResponse.json(
             {
                 error: "Failed to generate transcript",
-                details: error instanceof Error ? error.message : String(error),
+                ...(process.env.NODE_ENV !== "production" && {
+                    details: error instanceof Error ? error.message : String(error),
+                }),
             },
             { status: 500 }
         );

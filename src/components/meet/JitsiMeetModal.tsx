@@ -266,7 +266,7 @@ export default function JitsiMeetModal({
                             <div className="flex items-center gap-2">
                                 <p className="text-sm font-semibold text-[#f0f0f5]">FairWork Meet</p>
                                 {useJaaS && (
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#E9F9F0] text-[#1DBF73] border border-[#1DBF73]/30">
                                         JaaS
                                     </span>
                                 )}

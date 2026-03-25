@@ -48,8 +48,8 @@ export default function AIAnalysisReport({ analysis }: AIAnalysisReportProps) {
     return (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50/50 via-white to-slate-50/30 dark:from-slate-900/50 dark:via-slate-800/50 dark:to-slate-900/30 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 shadow-2xl">
             {/* Decorative background elements */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 pointer-events-none" />
-            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#1DBF73]/5 via-purple-500/5 to-pink-500/5 pointer-events-none" />
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#1DBF73]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative p-8">
@@ -142,7 +142,7 @@ export default function AIAnalysisReport({ analysis }: AIAnalysisReportProps) {
                 {/* Summary Section */}
                 <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 dark:from-slate-900/95 dark:to-slate-800/95 backdrop-blur-md rounded-2xl p-6 mb-6 border border-slate-700/50 shadow-xl">
                     <div className="flex items-center gap-2 mb-4">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1DBF73] to-purple-500 flex items-center justify-center">
                             <Sparkles className="w-4 h-4 text-white" />
                         </div>
                         <h4 className="text-lg font-bold text-white">
@@ -157,7 +157,7 @@ export default function AIAnalysisReport({ analysis }: AIAnalysisReportProps) {
                 {/* Key Reasoning Points */}
                 <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
                     <div className="flex items-center gap-2 mb-4">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1DBF73] to-purple-500 flex items-center justify-center">
                             <AlertCircle className="w-4 h-4 text-white" />
                         </div>
                         <h4 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -167,7 +167,7 @@ export default function AIAnalysisReport({ analysis }: AIAnalysisReportProps) {
                     <div className="space-y-3">
                         {analysis.reasoning.map((point, index) => (
                             <div key={index} className="flex gap-3 group">
-                                <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-md">
+                                <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-gradient-to-br from-[#1DBF73] to-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-md">
                                     {index + 1}
                                 </div>
                                 <p className="flex-1 text-sm text-slate-700 dark:text-slate-300 leading-relaxed pt-0.5">

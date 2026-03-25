@@ -1,133 +1,196 @@
 "use client";
 
-import SectionWrapper from "../SectionWrapper";
-import Container from "../Container";
-import FadeInOnScroll from "../FadeInOnScroll";
-import CinematicImage from "../CinematicImage";
-import GlowOrb from "../GlowOrb";
+import { useRef } from "react";
+import { Search, Lock, MessageSquare, CheckCircle2 } from "lucide-react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
+import BorderGlow from "@/components/landing/BorderGlow";
 
-const layers = [
+if (typeof window !== "undefined") {
+    gsap.registerPlugin(ScrollTrigger);
+}
+
+const STEPS = [
     {
-        name: "Smart Contract Layer",
-        description:
-            "FairWorkEscrow.sol — Handles job creation, USDC escrow, deadline enforcement, and automatic fund distribution. Built with OpenZeppelin security primitives.",
-        color: "bg-accent-indigo",
+        number: "01",
+        Icon: Search,
+        title: "Post or Browse",
+        desc: "Post a job with budget and timeline, or browse thousands of verified Web3 specialists.",
+        color: "#1DBF73",
+        iconBg: "#1DBF73",
+        shadow: "rgba(29,191,115,0.3)",
+        border: "rgba(29,191,115,0.22)",
+        highlights: ["Instant matches", "1,000+ profiles"],
+        cardBgGlass: "rgba(10, 10, 22, 0.85)",
     },
     {
-        name: "AI Analysis Engine",
-        description:
-            "GPT-4o dispute analysis pipeline — Ingests job descriptions, deliverables, and evidence to produce structured, confidence-scored recommendations for jurors.",
-        color: "bg-accent-violet",
+        number: "02",
+        Icon: Lock,
+        title: "Agree & Lock",
+        desc: "Accept a proposal and lock payment into the FairWork smart contract — fully on-chain.",
+        color: "#6366f1",
+        iconBg: "#6366f1",
+        shadow: "rgba(99,102,241,0.3)",
+        border: "rgba(99,102,241,0.22)",
+        highlights: ["USDC escrow", "Smart contract"],
+        cardBgGlass: "rgba(10, 10, 22, 0.85)",
     },
     {
-        name: "Jury DAO",
-        description:
-            "Decentralized arbitration — 3 randomly selected jurors review evidence and AI analysis, cast on-chain votes, and trigger automatic contract resolution.",
-        color: "bg-blue-500",
+        number: "03",
+        Icon: MessageSquare,
+        title: "Work & Deliver",
+        desc: "Collaborate in the built-in workspace. Chat, share files, and track milestones together.",
+        color: "#f59e0b",
+        iconBg: "#f59e0b",
+        shadow: "rgba(245,158,11,0.3)",
+        border: "rgba(245,158,11,0.22)",
+        highlights: ["Live chat", "File sharing"],
+        cardBgGlass: "rgba(10, 10, 22, 0.85)",
     },
     {
-        name: "IPFS Evidence Layer",
-        description:
-            "Pinata-powered immutable storage — All deliverables, job specs, and dispute evidence are content-addressed on IPFS for tamper-proof transparency.",
-        color: "bg-emerald-500",
+        number: "04",
+        Icon: CheckCircle2,
+        title: "Release & Review",
+        desc: "Approve delivery to release escrowed funds instantly. Disputes resolved by AI arbitration.",
+        color: "#ef4444",
+        iconBg: "#ef4444",
+        shadow: "rgba(239,68,68,0.3)",
+        border: "rgba(239,68,68,0.22)",
+        highlights: ["AI arbitration", "On-chain proof"],
+        cardBgGlass: "rgba(10, 10, 22, 0.85)",
     },
 ];
 
 export default function ArchitectureSection() {
+    const sectionRef = useRef<HTMLElement>(null);
+
+    useGSAP(() => {
+        gsap.from(".arch-header", {
+            scrollTrigger: { trigger: sectionRef.current, start: "top 80%" },
+            y: 40, opacity: 0, duration: 1, ease: "power3.out"
+        });
+
+        gsap.fromTo(".arch-line",
+            { scaleX: 0 },
+            {
+                scrollTrigger: { trigger: sectionRef.current, start: "top 65%" },
+                scaleX: 1, duration: 1.5, ease: "power3.inOut"
+            }
+        );
+
+        gsap.from(".arch-step", {
+            scrollTrigger: { trigger: sectionRef.current, start: "top 70%" },
+            y: 50, opacity: 0, duration: 0.8, stagger: 0.15, ease: "back.out(1.2)"
+        });
+    }, { scope: sectionRef });
+
     return (
-        <SectionWrapper id="architecture">
-            <div className="relative">
-                <GlowOrb
-                    color="violet"
-                    size="500px"
-                    className="top-0 right-0 -translate-y-1/2 translate-x-1/3"
-                />
+        <section ref={sectionRef} id="how-it-works" className="py-24 md:py-32 relative z-10">
+            <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
 
-                <Container>
-                    <div className="grid md:grid-cols-2 gap-16 md:gap-24 items-center">
-                        {/* Left: explanation */}
-                        <div>
-                            <FadeInOnScroll>
-                                <h2 className="text-section-title text-text-primary">
-                                    The FairWork Protocol
-                                </h2>
-                                <p className="mt-6 text-section-sub text-text-muted">
-                                    Four interconnected layers work together to create a trustless
-                                    freelancing infrastructure that protects every participant.
-                                </p>
-                            </FadeInOnScroll>
+                {/* Header */}
+                <div className="arch-header text-center max-w-2xl mx-auto mb-20">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-md">
+                        <span className="w-2 h-2 rounded-full bg-[#1DBF73] flex-shrink-0 shadow-[0_0_8px_#1DBF73]" />
+                        <span className="text-white/80 text-xs font-semibold uppercase tracking-[0.2em]">How It Works</span>
+                    </div>
+                    <h2
+                        className="font-extrabold text-white mb-5 tracking-tight"
+                        style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)", lineHeight: 1.1 }}
+                    >
+                        Hire in 4 simple steps
+                    </h2>
+                    <p className="text-[#A1A1AA] text-lg leading-relaxed font-light">
+                        From posting to payment — every step protected by smart contracts.
+                    </p>
+                </div>
 
-                            <div className="mt-12 space-y-6">
-                                {layers.map((layer, i) => (
-                                    <FadeInOnScroll key={i} delay={i * 0.1}>
-                                        <div className="flex gap-5 group">
-                                            <div className="flex flex-col items-center">
-                                                <div
-                                                    className={`h-3 w-3 rounded-full ${layer.color} shrink-0 mt-1.5 transition-transform duration-300 group-hover:scale-125`}
-                                                />
-                                                {i < layers.length - 1 && (
-                                                    <div className="w-px h-full bg-surface-border mt-2" />
-                                                )}
-                                            </div>
-                                            <div className="pb-6">
-                                                <h4 className="text-base font-medium text-text-primary">
-                                                    {layer.name}
-                                                </h4>
-                                                <p className="mt-2 text-sm leading-relaxed text-text-muted">
-                                                    {layer.description}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </FadeInOnScroll>
-                                ))}
-                            </div>
-                        </div>
+                {/* Steps grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
 
-                        {/* Right: visual */}
-                        <FadeInOnScroll direction="right" delay={0.2}>
-                            <div className="relative">
-                                {/* 4-directional feathered mask — fades all edges into background */}
+                    {/* Animated connecting line */}
+                    <div
+                        className="arch-line hidden lg:block absolute top-[60px] left-[13%] right-[13%] h-1 z-0 rounded-full"
+                        style={{
+                            background: "linear-gradient(90deg, #1DBF73 0%, #6366f1 33%, #f59e0b 66%, #ef4444 100%)",
+                            opacity: 0.5,
+                            transformOrigin: "left center",
+                            boxShadow: "0 0 15px rgba(255,255,255,0.1)"
+                        }}
+                    />
+
+                    {STEPS.map((step) => (
+                        <BorderGlow
+                            key={step.number}
+                            className="arch-step group cursor-default transition-transform duration-500 hover:-translate-y-2 relative z-10"
+                            borderRadius={32}
+                            glowIntensity={1.0}
+                            coneSpread={30}
+                            backgroundColor={step.cardBgGlass}
+                        >
+                            {/* inner clip wrapper */}
+                            <div className="relative overflow-hidden rounded-[32px] p-8 flex flex-col h-full">
+                                {/* Watermark step number */}
                                 <div
+                                    className="absolute bottom-2 right-2 font-black leading-none select-none pointer-events-none"
                                     style={{
-                                        WebkitMaskImage: [
-                                            "linear-gradient(to right,  transparent 0%, black 18%, black 82%, transparent 100%)",
-                                            "linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)",
-                                        ].join(", "),
-                                        WebkitMaskComposite: "source-in",
-                                        maskImage: [
-                                            "linear-gradient(to right,  transparent 0%, black 18%, black 82%, transparent 100%)",
-                                            "linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)",
-                                        ].join(", "),
-                                        maskComposite: "intersect",
+                                        fontSize: 100,
+                                        color: `${step.color}10`,
+                                        fontVariantNumeric: "tabular-nums",
                                     }}
                                 >
-                                    <CinematicImage
-                                        src="/images/landing/soundwave.png"
-                                        alt="FairWork Protocol Architecture"
-                                        width={640}
-                                        height={480}
-                                        className="w-full !rounded-none"
-                                    />
+                                    {step.number}
                                 </div>
 
-                                {/* Floating protocol labels */}
-                                <div className="absolute top-6 left-6 rounded-pill bg-backdrop/70 backdrop-blur-sm border border-surface-border px-4 py-2 text-xs text-text-muted">
-                                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-indigo mr-2 animate-glow-pulse" />
-                                    Smart Contract
+                                {/* Icon */}
+                                <div
+                                    className="relative z-10 w-14 h-14 rounded-2xl flex items-center justify-center mb-8 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6"
+                                    style={{
+                                        background: step.iconBg,
+                                        boxShadow: `0 8px 24px ${step.shadow}`,
+                                    }}
+                                >
+                                    <step.Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
                                 </div>
-                                <div className="absolute bottom-6 right-6 rounded-pill bg-backdrop/70 backdrop-blur-sm border border-surface-border px-4 py-2 text-xs text-text-muted">
-                                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-violet mr-2 animate-glow-pulse" />
-                                    AI Engine
-                                </div>
-                                <div className="absolute top-1/2 right-6 -translate-y-1/2 rounded-pill bg-backdrop/70 backdrop-blur-sm border border-surface-border px-4 py-2 text-xs text-text-muted">
-                                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500 mr-2 animate-glow-pulse" />
-                                    Jury DAO
+
+                                <div className="relative z-10">
+                                    <div
+                                        className="text-[11px] font-bold uppercase tracking-[0.2em] mb-3"
+                                        style={{ color: step.color }}
+                                    >
+                                        Step {step.number}
+                                    </div>
+                                    <h3 className="text-white font-bold text-lg mb-3 leading-snug tracking-wide">
+                                        {step.title}
+                                    </h3>
+                                    <p className="text-white/55 text-[15px] leading-relaxed mb-6 font-light">
+                                        {step.desc}
+                                    </p>
+
+                                    {/* Feature pills */}
+                                    <div className="flex flex-wrap gap-2">
+                                        {step.highlights.map((h) => (
+                                            <span
+                                                key={h}
+                                                className="text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-full"
+                                                style={{
+                                                    color: step.color,
+                                                    background: `${step.color}18`,
+                                                    border: `1px solid ${step.border}`,
+                                                }}
+                                            >
+                                                {h}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
-                        </FadeInOnScroll>
-                    </div>
-                </Container>
+                        </BorderGlow>
+                    ))}
+                </div>
+
             </div>
-        </SectionWrapper>
+        </section>
     );
 }
