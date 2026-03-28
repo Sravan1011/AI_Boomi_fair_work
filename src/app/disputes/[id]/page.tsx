@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { useAccount } from "wagmi";
 import { motion } from "framer-motion";
 
 import Navbar from "@/components/layout/Navbar";
@@ -13,7 +14,8 @@ import { supabase } from "@/lib/supabase";
 import { formatUSDC, formatAddress, getIPFSUrl } from "@/lib/utils";
 import {
     Loader2, ExternalLink, Brain, Scale, ShieldCheck,
-    FileText, CheckCircle2, ChevronDown, ChevronUp
+    FileText, CheckCircle2, ChevronDown, ChevronUp,
+    ThumbsUp, ThumbsDown, FileDown
 } from "lucide-react";
 import DisputeTimeline from "@/components/disputes/DisputeTimeline";
 import AIAnalysisReport from "@/components/disputes/AIAnalysisReport";
@@ -52,6 +54,8 @@ interface Dispute {
     created_at: string;
     outcome?: string;
     resolved_at?: string;
+    client_response?: string;
+    freelancer_response?: string;
     ai_analysis?: AIAnalysis;
     votes?: Vote[];
     jurors?: Juror[];
@@ -72,6 +76,7 @@ interface MeetRecording { id: string; transcript: string | null; }
 
 export default function DisputeDetailsPage() {
     const params = useParams();
+    const { address } = useAccount();
 
     const [dispute,            setDispute]            = useState<Dispute | null>(null);
     const [job,                setJob]                = useState<Job | null>(null);
@@ -82,6 +87,7 @@ export default function DisputeDetailsPage() {
     const [isGeneratingReport, setIsGeneratingReport] = useState(false);
     const [reportStep,         setReportStep]         = useState("");
     const [reportExpanded,     setReportExpanded]     = useState(true);
+    const [isResponding,       setIsResponding]       = useState(false);
 
     useEffect(() => {
         fetchDisputeData();
@@ -174,6 +180,27 @@ export default function DisputeDetailsPage() {
         }
     };
 
+    const handleDisputeResponse = async (response: "AGREE" | "DISAGREE") => {
+        if (!dispute || !address) return;
+        setIsResponding(true);
+        try {
+            const res = await fetch("/api/dispute/respond", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ disputeId: dispute.id, wallet: address, response }),
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Failed");
+            }
+            await fetchDisputeData();
+        } catch (err) {
+            alert(`Failed: ${err instanceof Error ? err.message : String(err)}`);
+        } finally {
+            setIsResponding(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-backdrop">
@@ -262,6 +289,104 @@ export default function DisputeDetailsPage() {
                                 <Badge variant={dispute.status === "RESOLVED" ? "success" : "danger"} className="px-3 py-1">
                                     {dispute.status}
                                 </Badge>
+                            </div>
+
+                            {/* ─── PDF Viewer + Agree/Disagree ─── */}
+                            <div className="rounded-2xl border border-surface-border bg-surface-elevated/60 overflow-hidden">
+                                <div className="flex items-center justify-between px-5 py-4 border-b border-surface-border">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 bg-[#1DBF73]/15 rounded-lg flex items-center justify-center">
+                                            <FileText className="w-4.5 h-4.5 text-[#1DBF73]" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-text-primary">Dispute Report Document</p>
+                                            <p className="text-xs text-text-muted">Auto-generated from project data</p>
+                                        </div>
+                                    </div>
+                                    <a
+                                        href={`/api/dispute/generate-pdf?disputeId=${dispute.id}`}
+                                        download={`FairWork-Dispute-${dispute.id.slice(0, 8)}.pdf`}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-border/50 hover:bg-surface-border text-text-muted hover:text-text-primary text-xs font-medium transition-colors"
+                                    >
+                                        <FileDown className="w-3.5 h-3.5" /> Download
+                                    </a>
+                                </div>
+
+                                {/* Embedded PDF */}
+                                <div className="bg-[#525659]">
+                                    <iframe
+                                        src={`/api/dispute/generate-pdf?disputeId=${dispute.id}`}
+                                        className="w-full border-0"
+                                        style={{ height: "600px" }}
+                                        title="Dispute Report PDF"
+                                    />
+                                </div>
+
+                                {/* Agree / Disagree Buttons */}
+                                {address && (() => {
+                                    const isClient = address.toLowerCase() === job.client.toLowerCase();
+                                    const isFreelancer = address.toLowerCase() === job.freelancer?.toLowerCase();
+                                    const myResponse = isClient ? dispute.client_response : isFreelancer ? dispute.freelancer_response : null;
+                                    const otherResponse = isClient ? dispute.freelancer_response : dispute.client_response;
+                                    const myRole = isClient ? "Client" : isFreelancer ? "Freelancer" : null;
+
+                                    if (!myRole) return null;
+
+                                    return (
+                                        <div className="px-5 py-5 border-t border-surface-border bg-surface">
+                                            {myResponse ? (
+                                                <div className="space-y-3">
+                                                    <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold ${
+                                                        myResponse === "AGREE"
+                                                            ? "bg-[#E9F9F0] text-[#19A463] border border-[#1DBF73]/30"
+                                                            : "bg-red-50 text-red-600 border border-red-200"
+                                                    }`}>
+                                                        {myResponse === "AGREE" ? <ThumbsUp className="w-4 h-4" /> : <ThumbsDown className="w-4 h-4" />}
+                                                        You ({myRole}) responded: <strong>{myResponse}</strong>
+                                                    </div>
+                                                    {otherResponse && (
+                                                        <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium ${
+                                                            otherResponse === "AGREE"
+                                                                ? "bg-[#E9F9F0]/50 text-[#19A463]"
+                                                                : "bg-red-50/50 text-red-500"
+                                                        }`}>
+                                                            {isClient ? "Freelancer" : "Client"} responded: <strong>{otherResponse}</strong>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-3">
+                                                    <p className="text-sm text-text-muted text-center">
+                                                        Do you agree with the details in this dispute report?
+                                                    </p>
+                                                    <div className="flex gap-3">
+                                                        <button
+                                                            onClick={() => handleDisputeResponse("AGREE")}
+                                                            disabled={isResponding}
+                                                            className="flex-1 flex items-center justify-center gap-2 h-12 rounded-xl font-bold text-sm bg-[#1DBF73] hover:bg-[#19A463] text-white transition-all shadow-[0_0_15px_rgba(29,191,115,0.3)] hover:shadow-[0_0_25px_rgba(29,191,115,0.5)] disabled:opacity-50"
+                                                        >
+                                                            {isResponding ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsUp className="w-4 h-4" />}
+                                                            Agree
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDisputeResponse("DISAGREE")}
+                                                            disabled={isResponding}
+                                                            className="flex-1 flex items-center justify-center gap-2 h-12 rounded-xl font-bold text-sm bg-red-500 hover:bg-red-600 text-white transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:shadow-[0_0_25px_rgba(239,68,68,0.5)] disabled:opacity-50"
+                                                        >
+                                                            {isResponding ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsDown className="w-4 h-4" />}
+                                                            Disagree
+                                                        </button>
+                                                    </div>
+                                                    {otherResponse && (
+                                                        <p className="text-xs text-text-subtle text-center">
+                                                            {isClient ? "Freelancer" : "Client"} has already responded: <strong>{otherResponse}</strong>
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* AI Analysis */}

@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { formatUSDC, formatAddress, getIPFSUrl } from "@/lib/utils";
 import { Loader2, ExternalLink, Upload, CheckCircle2, AlertTriangle, XCircle, MessageCircle, UserCheck } from "lucide-react";
 import JobXmtpChat from "@/components/chat/JobXmtpChat";
+import ProjectSubmissionForm from "@/components/jobs/ProjectSubmissionForm";
 import { useGSAP } from "@/hooks/useGSAP";
 import gsap from "gsap";
 import {
@@ -51,10 +52,10 @@ export default function JobDetailsPage() {
 
     const [job, setJob] = useState<Job | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [deliverableFile, setDeliverableFile] = useState<File | null>(null);
     const [disputeReason, setDisputeReason] = useState("");
     const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
     const [showDisputeForm, setShowDisputeForm] = useState(false);
+    const [showSubmissionForm, setShowSubmissionForm] = useState(false);
     const [showCancelDialog, setShowCancelDialog] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
     const [pendingTxHash, setPendingTxHash] = useState<`0x${string}` | undefined>();
@@ -175,13 +176,9 @@ export default function JobDetailsPage() {
         });
     };
 
-    const handleSubmitDeliverable = async () => {
-        if (!deliverableFile || !job) return;
+    const handleSubmitDeliverable = async (ipfsHash: string) => {
+        if (!ipfsHash || !job) return;
         try {
-            const formData = new FormData();
-            formData.append("file", deliverableFile);
-            const response = await fetch("/api/ipfs/upload", { method: "POST", body: formData });
-            const { ipfsHash } = await response.json();
             writeContract({
                 address: ESCROW_CONTRACT_ADDRESS, abi: ESCROW_ABI, functionName: "submitDeliverable",
                 args: [BigInt(job.contract_job_id), ipfsHash],
@@ -307,7 +304,7 @@ export default function JobDetailsPage() {
     const isFreelancerWaitingApproval = job.status === "WAITING_CLIENT_APPROVAL" && isFreelancer;
     const canSubmit = job.status === "ACCEPTED" && isFreelancer;
     const canApprove = job.status === "SUBMITTED" && isClient;
-    const canDispute = job.status === "SUBMITTED" && (isClient || isFreelancer);
+    const canDispute = ["ACCEPTED", "SUBMITTED"].includes(job.status) && (isClient || isFreelancer);
     const canCancel = job.status === "OPEN" && isClient && isConnected;
     const canAccessChat =
         Boolean(job.freelancer) && (isClient || isFreelancer) &&
@@ -447,14 +444,25 @@ export default function JobDetailsPage() {
                                     </div>
                                 )}
 
-                                {canSubmit && (
-                                    <div className="space-y-4 p-6 rounded-2xl border border-white/10 bg-white/5">
-                                        <Label className="text-[12px] font-bold uppercase tracking-widest text-white/50">Upload Delivery</Label>
-                                        <Input type="file" onChange={(e) => setDeliverableFile(e.target.files?.[0] || null)} className="bg-black/40 border-white/10 text-white" />
-                                        <Button onClick={handleSubmitDeliverable} disabled={!deliverableFile || isPending} className="w-full h-14 rounded-xl font-black uppercase tracking-wider bg-[#1DBF73] hover:bg-[#158a53] text-black shadow-[0_0_20px_rgba(29,191,115,0.4)] mt-2">
-                                            {isPending ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Upload className="w-5 h-5 mr-2" />}
-                                            Submit Final Work
-                                        </Button>
+                                {canSubmit && job && address && (
+                                    <div className="space-y-3">
+                                        {!showSubmissionForm ? (
+                                            <Button
+                                                onClick={() => setShowSubmissionForm(true)}
+                                                className="w-full h-14 rounded-xl font-black uppercase tracking-wider bg-[#1DBF73] hover:bg-[#158a53] text-black shadow-[0_0_20px_rgba(29,191,115,0.4)] hover:shadow-[0_0_30px_rgba(29,191,115,0.6)] transition-all"
+                                            >
+                                                <Upload className="w-5 h-5 mr-2" />
+                                                Create Submission
+                                            </Button>
+                                        ) : (
+                                            <ProjectSubmissionForm
+                                                jobId={job.id}
+                                                jobTitle={job.title}
+                                                freelancerAddress={address}
+                                                onSubmitSuccess={handleSubmitDeliverable}
+                                                isPending={isPending}
+                                            />
+                                        )}
                                     </div>
                                 )}
 
@@ -464,7 +472,12 @@ export default function JobDetailsPage() {
                                             {isPending ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <CheckCircle2 className="w-5 h-5 mr-2" />}
                                             Approve Delivery & Release Funds
                                         </Button>
-                                        <Button onClick={() => setShowDisputeForm(!showDisputeForm)} variant="outline" className="w-full h-12 rounded-xl font-bold uppercase tracking-wider text-red-400 border-red-500/30 hover:bg-red-500/10 mt-2">
+                                    </div>
+                                )}
+
+                                {canDispute && !showDisputeForm && (
+                                    <div className="mt-4">
+                                        <Button onClick={() => setShowDisputeForm(true)} variant="outline" className="w-full h-12 rounded-xl font-bold uppercase tracking-wider text-red-400 border-red-500/30 hover:bg-red-500/10">
                                             <AlertTriangle className="w-4 h-4 mr-2" /> Raise Dispute
                                         </Button>
                                     </div>

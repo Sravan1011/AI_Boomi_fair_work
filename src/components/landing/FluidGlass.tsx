@@ -16,6 +16,20 @@ interface FluidGlassProps {
 }
 
 export default function FluidGlass({ mode = 'lens', lensProps = {}, barProps = {}, cubeProps = {} }: FluidGlassProps) {
+  const [supported, setSupported] = useState(true);
+
+  useEffect(() => {
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+      if (!gl) setSupported(false);
+    } catch {
+      setSupported(false);
+    }
+  }, []);
+
+  if (!supported) return null;
+
   const Wrapper = mode === 'bar' ? Bar : mode === 'cube' ? Cube : Lens;
   const modeProps = mode === 'bar' ? barProps : mode === 'cube' ? cubeProps : lensProps;
 
