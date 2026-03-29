@@ -58,6 +58,7 @@ export default function JobDetailsPage() {
     const [showSubmissionForm, setShowSubmissionForm] = useState(false);
     const [showCancelDialog, setShowCancelDialog] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [isSubmittingDispute, setIsSubmittingDispute] = useState(false);
     const [pendingTxHash, setPendingTxHash] = useState<`0x${string}` | undefined>();
     const [pendingAction, setPendingAction] = useState<string | null>(null);
     const [jobEventNotice, setJobEventNotice] = useState<string | null>(null);
@@ -219,27 +220,56 @@ export default function JobDetailsPage() {
     };
 
     const handleRaiseDispute = async () => {
-        if (!evidenceFile || !disputeReason || !job) return;
+        if (!disputeReason || !job) return;
+        setIsSubmittingDispute(true);
+        setPendingAction("dispute");
+
         try {
-            const formData = new FormData();
-            formData.append("file", evidenceFile);
-            const response = await fetch("/api/ipfs/upload", { method: "POST", body: formData });
-            const { ipfsHash } = await response.json();
-            writeContract({
-                address: ESCROW_CONTRACT_ADDRESS, abi: ESCROW_ABI, functionName: "raiseDispute",
-                args: [BigInt(job.contract_job_id), ipfsHash],
-            }, {
-                onSuccess: async (txHash) => {
-                    await supabase.from("disputes").insert({
-                        contract_dispute_id: 0, job_id: job.id,
-                        contract_job_id: job.contract_job_id, raised_by: address,
-                        reason: disputeReason, status: "RAISED",
-                    });
-                    setPendingTxHash(txHash); setPendingAction("dispute");
-                },
-                onError: (error: Error) => alert(`❌ Failed to raise dispute: ${error.message}`),
-            });
-        } catch (error) { console.error("Error raising dispute:", error); alert("Failed to raise dispute"); }
+            let ipfsHash = "";
+            if (evidenceFile) {
+                const formData = new FormData();
+                formData.append("file", evidenceFile);
+                const response = await fetch("/api/ipfs/upload", { method: "POST", body: formData });
+                if (response.ok) {
+                    const data = await response.json();
+                    ipfsHash = data.ipfsHash;
+                }
+            }
+
+            // Directly insert into the database (bypassing the strict Smart Contract constraints)
+            const { data: newDisputes, error: dbError } = await supabase.from("disputes").insert({
+                contract_dispute_id: 0,
+                job_id: job.id,
+                contract_job_id: job.contract_job_id,
+                raised_by: address || "",
+                reason: disputeReason,
+                status: "DISPUTED", // Skip RAISED directly into DISPUTED state since no contract transaction is needed
+                dispute_pdf_ipfs: ipfsHash,
+            }).select();
+
+            if (dbError) throw dbError;
+            const createdDispute = newDisputes?.[0];
+
+            if (createdDispute) {
+                // Backgroundly trigger AI Dispute Arbitration
+                fetch("/api/ai/analyze-dispute", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ disputeId: createdDispute.id })
+                }).catch(console.error);
+
+                alert("Dispute raised successfully! Our AI is reviewing the case now.");
+                router.push(`/disputes/${createdDispute.id}`);
+            }
+
+        } catch (error) {
+            console.error("Error raising dispute:", error);
+            alert("Failed to raise dispute");
+        } finally {
+            setIsSubmittingDispute(false);
+            setPendingAction(null);
+            setShowDisputeForm(false);
+        }
     };
 
     const handleCancelJob = async () => {
@@ -498,8 +528,8 @@ export default function JobDetailsPage() {
                                             <Label className="text-[12px] font-bold uppercase tracking-widest text-red-400">Evidence Document</Label>
                                             <Input type="file" onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)} className="mt-2 bg-black/40 border-red-500/20 text-white" />
                                         </div>
-                                        <Button onClick={handleRaiseDispute} disabled={!disputeReason || !evidenceFile || isPending} className="w-full h-12 mt-2 bg-red-500 hover:bg-red-600 text-white font-bold tracking-wider">
-                                            {isPending ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
+                                        <Button onClick={handleRaiseDispute} disabled={!disputeReason || !evidenceFile || isSubmittingDispute} className="w-full h-12 mt-2 bg-red-500 hover:bg-red-600 text-white font-bold tracking-wider">
+                                            {isSubmittingDispute ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
                                             Submit Dispute
                                         </Button>
                                     </div>
