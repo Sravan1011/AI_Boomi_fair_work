@@ -237,13 +237,16 @@ export default function JobDetailsPage() {
             }
 
             // Directly insert into the database (bypassing the strict Smart Contract constraints)
+            // Use a large negative unique value based on timestamp to avoid conflicts with real contract IDs
+            const uniqueOffChainId = -(Date.now() % 2147483647);
             const { data: newDisputes, error: dbError } = await supabase.from("disputes").insert({
-                contract_dispute_id: 0,
+                contract_dispute_id: uniqueOffChainId,
                 job_id: job.id,
                 contract_job_id: job.contract_job_id,
                 raised_by: address || "",
                 reason: disputeReason,
                 status: "DISPUTED", // Skip RAISED directly into DISPUTED state since no contract transaction is needed
+                outcome: "PENDING",
                 dispute_pdf_ipfs: ipfsHash,
             }).select();
 
@@ -525,10 +528,10 @@ export default function JobDetailsPage() {
                                             />
                                         </div>
                                         <div>
-                                            <Label className="text-[12px] font-bold uppercase tracking-widest text-red-400">Evidence Document</Label>
+                                            <Label className="text-[12px] font-bold uppercase tracking-widest text-red-400">Evidence Document <span className="font-normal normal-case text-red-400/60">(optional)</span></Label>
                                             <Input type="file" onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)} className="mt-2 bg-black/40 border-red-500/20 text-white" />
                                         </div>
-                                        <Button onClick={handleRaiseDispute} disabled={!disputeReason || !evidenceFile || isSubmittingDispute} className="w-full h-12 mt-2 bg-red-500 hover:bg-red-600 text-white font-bold tracking-wider">
+                                        <Button onClick={handleRaiseDispute} disabled={!disputeReason || isSubmittingDispute} className="w-full h-12 mt-2 bg-red-500 hover:bg-red-600 text-white font-bold tracking-wider">
                                             {isSubmittingDispute ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
                                             Submit Dispute
                                         </Button>
